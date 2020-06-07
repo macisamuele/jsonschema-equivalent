@@ -1,6 +1,7 @@
 //! The reference of the JSON Schema specifications are available on
 //! <https://tools.ietf.org/html/draft-handrews-json-schema-validation-01>
 mod additional_properties;
+mod min_max;
 mod required;
 mod type_;
 
@@ -119,6 +120,7 @@ static KEYWORDS_WITH_DIRECT_SUBSCHEMAS: &[&str] = &[
 /// library so please be mindfull before modifying the order (and if you
 /// do so please motivate it in the pull request description)
 static UPDATE_SCHEMA_METHODS: &[fn(&mut Value) -> &mut Value] = &[
+    min_max::update_min_max_related_keywords,
     type_::remove_extraneous_keys_keyword_type,
     additional_properties::remove_empty_additional_properties,
     required::remove_empty_required,

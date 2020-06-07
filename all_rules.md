@@ -31,4 +31,9 @@
 | `additionalProperties` keyword has no effect on `true` schema | `{"additionalProperties": true}` | `{}` |
 | `additionalProperties` keyword has no effect on empty schema | `{"additionalProperties": {}}` | `{}` |
 | `required` keyword has no effect on empty list | `{"required": []}` | `{}` |
+| `exclusiveMaximum` keyword lower than `exclusiveMinimum` keyword results into a `false` schema | `{"type": "number", "exclusiveMaximum": 1, "exclusiveMinimum": 2}` | `false` |
+| `maxItems` keyword lower than `minItems` keyword results into a `false` schema | `{"type": "array", "maxItems": 1, "minItems": 2}` | `false` |
+| `maxLength` keyword lower than `minLength` keyword results into a `false` schema | `{"type": "string", "maxLength": 1, "minLength": 2}` | `false` |
+| `maxProperties` keyword lower than `minProperties` keyword results into a `false` schema | `{"type": "object", "maxProperties": 1, "minProperties": 2}` | `false` |
+| `maximum` keyword lower than `minimum` keyword results into a `false` schema | `{"type": "number", "maximum": 1, "minimum": 2}` | `false` |
 <!-- TABLE END -->
