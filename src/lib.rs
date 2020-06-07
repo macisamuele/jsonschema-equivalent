@@ -76,7 +76,7 @@ pub fn jsonschema_equivalent_ref(schema: &mut Value) -> &mut Value {
 /// use serde_json::json;
 ///
 /// let equivalent_schema = jsonschema_equivalent(json!(
-///     {"type": "string"}
+///     {"type": "string", "minimum": 42}
 /// ));
 /// assert_eq!(equivalent_schema, json!({"type": "string"}))
 /// ```

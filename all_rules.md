@@ -21,4 +21,11 @@
 | A non schema passses untouched | `1` | `1` |
 | A boolean schema passes untouched (1) | `true` | `true` |
 | A boolean schema passes untouched (2) | `false` | `false` |
+| `minimum` keyword has no effect on schema with `type` array | `{"minimum": 1, "type": "array"}` | `{"type": "array"}` |
+| `minimum` keyword has no effect on schema with `type` boolean | `{"minimum": 1, "type": "boolean"}` | `{"type": "boolean"}` |
+| `minimum` keyword has no effect on schema with `type` null | `{"minimum": 1, "type": "null"}` | `{"type": "null"}` |
+| `minLength` keyword has no effect on schema with `type` integer | `{"minLength": 1, "type": "integer"}` | `{"type": "integer"}` |
+| `minLength` keyword has no effect on schema with `type` number | `{"minLength": 1, "type": "number"}` | `{"type": "number"}` |
+| `minimum` keyword has no effect on schema with `type` object | `{"minimum": 1, "type": "object"}` | `{"type": "object"}` |
+| `minimum` keyword has no effect on schema with `type` string | `{"minimum": 1, "type": "string"}` | `{"type": "string"}` |
 <!-- TABLE END -->

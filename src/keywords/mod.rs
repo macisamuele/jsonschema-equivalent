@@ -1,5 +1,7 @@
 //! The reference of the JSON Schema specifications are available on
 //! <https://tools.ietf.org/html/draft-handrews-json-schema-validation-01>
+mod type_;
+
 use serde_json::{Map, Value};
 use std::collections::HashSet;
 
@@ -11,7 +13,6 @@ fn contains<T: Ord>(sorted_slice: &[T], value: &T) -> bool {
 }
 
 /// All keywords of Draft4, Draft6 and Draft7
-#[allow(dead_code)]
 pub(crate) static KEYWORDS: &[&str] = &[
     "additionalItems",
     "additionalProperties",
@@ -115,7 +116,8 @@ static KEYWORDS_WITH_DIRECT_SUBSCHEMAS: &[&str] = &[
 /// NOTE: The order might be important for the capability/quality of the
 /// library so please be mindfull before modifying the order (and if you
 /// do so please motivate it in the pull request description)
-static UPDATE_SCHEMA_METHODS: &[fn(&mut Value) -> &mut Value] = &[];
+static UPDATE_SCHEMA_METHODS: &[fn(&mut Value) -> &mut Value] =
+    &[type_::remove_extraneous_keys_keyword_type];
 
 /// Replace the `schema` with `false`.
 ///
@@ -142,7 +144,6 @@ pub(crate) fn replace_schema_with_true_schema(schema: &mut Value) {
 
 /// Build the list of keywords to remove starting from the keywords to preserve
 /// This is done in order to avoid removing keywords added in future Draft versions
-#[allow(dead_code)]
 fn keywords_to_remove(keywords_to_preserve: &[&'static str]) -> HashSet<&'static str> {
     let mut keywords: HashSet<&str> = KEYWORDS.iter().cloned().collect();
     for keyword in keywords_to_preserve {
@@ -152,7 +153,6 @@ fn keywords_to_remove(keywords_to_preserve: &[&'static str]) -> HashSet<&'static
 }
 
 /// Removes all the keys present in map which are not present in `keys_to_preserve`
-#[allow(dead_code)]
 pub(crate) fn preserve_keys(map: &mut Map<String, Value>, keys_to_preserve: &[&'static str]) {
     let remove_keywords: HashSet<&str> = keywords_to_remove(keys_to_preserve);
     let keys_to_remove: Vec<String> = map
@@ -296,6 +296,8 @@ mod tests {
     }
 
     #[test_case(json!({}) => json!({}))]
+    #[test_case(json!({"properties": {"prop": {"type": "string", "minimum": 1}}}) => json!({"properties": {"prop": {"type": "string"}}}))]
+    #[test_case(json!({"allOf": [{"type": "string", "minimum": 1}]}) => json!({"allOf": [{"type": "string"}]}))]
     fn test_update_schema_descend_schema(mut schema: Value) -> Value {
         update_schema(&mut schema);
         schema
