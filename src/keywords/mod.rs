@@ -1,5 +1,6 @@
 //! The reference of the JSON Schema specifications are available on
 //! <https://tools.ietf.org/html/draft-handrews-json-schema-validation-01>
+mod additional_properties;
 mod type_;
 
 use serde_json::{Map, Value};
@@ -116,8 +117,10 @@ static KEYWORDS_WITH_DIRECT_SUBSCHEMAS: &[&str] = &[
 /// NOTE: The order might be important for the capability/quality of the
 /// library so please be mindfull before modifying the order (and if you
 /// do so please motivate it in the pull request description)
-static UPDATE_SCHEMA_METHODS: &[fn(&mut Value) -> &mut Value] =
-    &[type_::remove_extraneous_keys_keyword_type];
+static UPDATE_SCHEMA_METHODS: &[fn(&mut Value) -> &mut Value] = &[
+    type_::remove_extraneous_keys_keyword_type,
+    additional_properties::remove_empty_additional_properties,
+];
 
 /// Replace the `schema` with `false`.
 ///
