@@ -28,6 +28,8 @@
 | `minLength` keyword has no effect on schema with `type` number | `{"minLength": 1, "type": "number"}` | `{"type": "number"}` |
 | `minimum` keyword has no effect on schema with `type` object | `{"minimum": 1, "type": "object"}` | `{"type": "object"}` |
 | `minimum` keyword has no effect on schema with `type` string | `{"minimum": 1, "type": "string"}` | `{"type": "string"}` |
+| `type` keyword containing `number` and `integer` is as effective as only containing number | `{"type": ["number", "integer"]}` | `{"type": "number"}` |
+| `minItems` keyword has no effect on schema with `type` string or number | `{"type": ["number", "string"], "minLength": 1, "minimum": 2, "minItems": 3}` | `{"type": ["number", "string"], "minLength": 1, "minimum": 2}` |
 | `additionalProperties` keyword has no effect on `true` schema | `{"additionalProperties": true}` | `{}` |
 | `additionalProperties` keyword has no effect on empty schema | `{"additionalProperties": {}}` | `{}` |
 | `required` keyword has no effect on empty list | `{"required": []}` | `{}` |

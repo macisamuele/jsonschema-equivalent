@@ -121,6 +121,7 @@ static KEYWORDS_WITH_DIRECT_SUBSCHEMAS: &[&str] = &[
 /// do so please motivate it in the pull request description)
 static UPDATE_SCHEMA_METHODS: &[fn(&mut Value) -> &mut Value] = &[
     min_max::update_min_max_related_keywords,
+    type_::optimise_keyword_type_if_array,
     type_::remove_extraneous_keys_keyword_type,
     additional_properties::remove_empty_additional_properties,
     required::remove_empty_required,
