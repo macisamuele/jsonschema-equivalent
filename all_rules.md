@@ -30,4 +30,5 @@
 | `minimum` keyword has no effect on schema with `type` string | `{"minimum": 1, "type": "string"}` | `{"type": "string"}` |
 | `additionalProperties` keyword has no effect on `true` schema | `{"additionalProperties": true}` | `{}` |
 | `additionalProperties` keyword has no effect on empty schema | `{"additionalProperties": {}}` | `{}` |
+| `required` keyword has no effect on empty list | `{"required": []}` | `{}` |
 <!-- TABLE END -->
