@@ -1,4 +1,7 @@
-use crate::keywords::{preserve_keys, PrimitiveType};
+use crate::{
+    helpers::{get_primitive_types, preserve_keys},
+    primitive_type::PrimitiveType,
+};
 use serde_json::Value;
 use std::{
     collections::HashSet,
@@ -138,63 +141,61 @@ pub(crate) fn remove_extraneous_keys_keyword_type(schema: &mut Value) -> &mut Va
         return schema;
     };
 
-    match schema_object.get("type") {
-        Some(Value::String(value)) => {
-            let value_str: &str = value.as_ref();
-            match PrimitiveType::try_from(value_str).ok() {
-                Some(PrimitiveType::Array) => preserve_keys(schema_object, &KEYWORDS_TYPE_ARRAY),
-                Some(PrimitiveType::Boolean) => {
-                    preserve_keys(schema_object, &KEYWORDS_TYPE_BOOLEAN)
-                }
-                Some(PrimitiveType::Integer) => {
-                    preserve_keys(schema_object, &KEYWORDS_TYPE_INTEGER)
-                }
-                Some(PrimitiveType::Null) => preserve_keys(schema_object, &KEYWORDS_TYPE_NULL),
-                Some(PrimitiveType::Number) => preserve_keys(schema_object, &KEYWORDS_TYPE_NUMBER),
-                Some(PrimitiveType::Object) => preserve_keys(schema_object, &KEYWORDS_TYPE_OBJECT),
-                Some(PrimitiveType::String) => preserve_keys(schema_object, &KEYWORDS_TYPE_STRING),
-                _ => {}
+    let mut primitive_types = get_primitive_types(schema_object);
+    if !primitive_types.is_empty() {
+        let mut keys_to_reserve = HashSet::<&'static str>::new();
+        for primtive_type in &primitive_types {
+            match primtive_type {
+                PrimitiveType::Array => KEYWORDS_TYPE_ARRAY.iter().for_each(|key| {
+                    keys_to_reserve.insert(key);
+                }),
+                PrimitiveType::Boolean => KEYWORDS_TYPE_BOOLEAN.iter().for_each(|key| {
+                    keys_to_reserve.insert(key);
+                }),
+                PrimitiveType::Integer => KEYWORDS_TYPE_INTEGER.iter().for_each(|key| {
+                    keys_to_reserve.insert(key);
+                }),
+                PrimitiveType::Null => KEYWORDS_TYPE_NULL.iter().for_each(|key| {
+                    keys_to_reserve.insert(key);
+                }),
+                PrimitiveType::Number => KEYWORDS_TYPE_NUMBER.iter().for_each(|key| {
+                    keys_to_reserve.insert(key);
+                }),
+                PrimitiveType::Object => KEYWORDS_TYPE_OBJECT.iter().for_each(|key| {
+                    keys_to_reserve.insert(key);
+                }),
+                PrimitiveType::String => KEYWORDS_TYPE_STRING.iter().for_each(|key| {
+                    keys_to_reserve.insert(key);
+                }),
             }
         }
 
-        Some(Value::Array(items)) => {
-            let mut keys_to_reserve = HashSet::<&'static str>::new();
-            let types = items
+        preserve_keys(schema_object, &keys_to_reserve);
+        if primitive_types.contains(&PrimitiveType::Integer)
+            && primitive_types.contains(&PrimitiveType::Number)
+        {
+            let _ = primitive_types.remove(&PrimitiveType::Integer);
+        }
+
+        let schema_type_mut = schema_object
+            .get_mut("type")
+            .expect("`type` keyword is present as we have multiple types");
+        if primitive_types.len() == 1 {
+            let first_type_str = primitive_types
                 .iter()
-                .map(|value| PrimitiveType::try_from(value).ok())
-                .filter_map(identity)
-                .collect::<Vec<_>>();
-            for primtive_type in types {
-                match primtive_type {
-                    PrimitiveType::Array => KEYWORDS_TYPE_ARRAY.iter().for_each(|key| {
-                        keys_to_reserve.insert(key);
-                    }),
-                    PrimitiveType::Boolean => KEYWORDS_TYPE_BOOLEAN.iter().for_each(|key| {
-                        keys_to_reserve.insert(key);
-                    }),
-                    PrimitiveType::Integer => KEYWORDS_TYPE_INTEGER.iter().for_each(|key| {
-                        keys_to_reserve.insert(key);
-                    }),
-                    PrimitiveType::Null => KEYWORDS_TYPE_NULL.iter().for_each(|key| {
-                        keys_to_reserve.insert(key);
-                    }),
-                    PrimitiveType::Number => KEYWORDS_TYPE_NUMBER.iter().for_each(|key| {
-                        keys_to_reserve.insert(key);
-                    }),
-                    PrimitiveType::Object => KEYWORDS_TYPE_OBJECT.iter().for_each(|key| {
-                        keys_to_reserve.insert(key);
-                    }),
-                    PrimitiveType::String => KEYWORDS_TYPE_STRING.iter().for_each(|key| {
-                        keys_to_reserve.insert(key);
-                    }),
-                }
-            }
-
-            preserve_keys(schema_object, &keys_to_reserve);
-        }
-
-        _ => {}
-    };
+                .next()
+                .expect("It will be present as length is 1")
+                .to_string();
+            *schema_type_mut = Value::String(first_type_str)
+        } else {
+            *schema_type_mut = Value::Array(
+                primitive_types
+                    .iter()
+                    .map(|value| Value::String(value.to_string()))
+                    .collect(),
+            )
+        };
+    }
     schema
 }
 

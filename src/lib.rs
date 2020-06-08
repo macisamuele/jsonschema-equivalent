@@ -59,7 +59,10 @@
 // the schema is impossible and so it would be equivalent to `false`
 // This means that a schema can be migrated from JSON object to JSON boolean
 
+pub(crate) mod constants;
+pub(crate) mod helpers;
 mod keywords;
+pub(crate) mod primitive_type;
 use serde_json::Value;
 
 /// Optimise input schema by removing extraneous/incongruent keys replacing equivalent

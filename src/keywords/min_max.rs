@@ -1,4 +1,4 @@
-use crate::keywords::replace_schema_with_false_schema;
+use crate::helpers::replace_schema_with_false_schema;
 use serde_json::Value;
 
 /// Update schema with incongruent `exclusiveMaximum` and `exclusiveMinimum`.

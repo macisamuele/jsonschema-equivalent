@@ -1,23 +1,20 @@
+use crate::helpers::is_true_schema;
 use serde_json::Value;
 
 /// Removes empty `additionalProperties` schemas.
 #[rule_processor_logger::log_processing]
 pub(crate) fn remove_empty_additional_properties(schema: &mut Value) -> &mut Value {
-    match schema.get("additionalProperties") {
-        Some(Value::Bool(true)) => {
-            let _ = schema
-                .as_object_mut()
-                .expect("As a property exist we're sure that we're dealing with an object")
-                .remove("additionalProperties");
-        }
-        Some(Value::Object(obj)) if obj.is_empty() => {
-            let _ = schema
-                .as_object_mut()
-                .expect("As a property exist we're sure that we're dealing with an object")
-                .remove("additionalProperties");
-        }
-        _ => {}
+    let schema_object = if let Some(value) = schema.as_object_mut() {
+        value
+    } else {
+        return schema;
     };
+    if schema_object
+        .get("additionalProperties")
+        .map_or(false, is_true_schema)
+    {
+        schema_object.remove("additionalProperties");
+    }
     schema
 }
 
