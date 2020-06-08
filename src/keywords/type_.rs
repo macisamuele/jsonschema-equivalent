@@ -7,6 +7,8 @@ use std::{
 
 lazy_static::lazy_static! {
     static ref KEYWORDS_TYPE_ARRAY: HashSet<&'static str> = [
+        "allOf",
+        "anyOf",
         "additionalItems",
         "contains",
         "const",
@@ -14,12 +16,24 @@ lazy_static::lazy_static! {
         "items",
         "maxItems",
         "minItems",
+        "not",
+        "oneOf",
         "type",
         "uniqueItems",
     ].iter().cloned().collect();
-    static ref KEYWORDS_TYPE_BOOLEAN: HashSet<&'static str> = ["const", "enum", "type"].iter().cloned().collect();
+    static ref KEYWORDS_TYPE_BOOLEAN: HashSet<&'static str> = [
+        "allOf",
+        "anyOf",
+        "const",
+        "enum",
+        "type",
+        "not",
+        "oneOf",
+    ].iter().cloned().collect();
     static ref KEYWORDS_TYPE_NULL: HashSet<&'static str> = KEYWORDS_TYPE_BOOLEAN.iter().cloned().collect();
     static ref KEYWORDS_TYPE_INTEGER: HashSet<&'static str> = [
+        "allOf",
+        "anyOf",
         "const",
         "enum",
         "exclusiveMaximum",
@@ -28,6 +42,8 @@ lazy_static::lazy_static! {
         "maximum",
         "minimum",
         "multipleOf",
+        "not",
+        "oneOf",
         "type",
     ].iter().cloned().collect();
     static ref KEYWORDS_TYPE_NUMBER: HashSet<&'static str> = KEYWORDS_TYPE_INTEGER.iter().cloned().collect();
@@ -49,6 +65,8 @@ lazy_static::lazy_static! {
         "type",
     ].iter().cloned().collect();
     static ref KEYWORDS_TYPE_STRING: HashSet<&'static str> = [
+        "allOf",
+        "anyOf",
         "contentMediaType",
         "contentEncoding",
         "const",
@@ -56,6 +74,8 @@ lazy_static::lazy_static! {
         "format",
         "maxLength",
         "minLength",
+        "not",
+        "oneOf",
         "pattern",
         "type",
     ].iter().cloned().collect();
