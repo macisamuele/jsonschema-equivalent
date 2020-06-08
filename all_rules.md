@@ -39,4 +39,7 @@
 | `{"maxProperties": 1, "minProperties": 2, "type": "object"}` | `false` | `maxProperties` keyword lower than `minProperties` keyword results into a `false` schema |
 | `{"maxItems": 2, "minItems": 1, "type": "integer"}` | `{"type": "integer"}` | Extraneous `*max*`, `*min*` keywords are removed (if not matching with type) |
 | `{"maxItems": 1, "minItems": 2, "type": ["integer", "array"]}` | `{"type": "integer"}` | If `*max*`, `*min*` keywords are creating an impossible range then the corresponding `type` is removed |
+| `{"propertyNames": {"minLength": 1}, "type": "number"}` | `{"type": "number"}` | `propertyNames` adds no restriction if JSON objects are not allowed |
+| `{"propertyNames": {"minLength": 1, "minimum": 1}, "type": "object"}` | `{"propertyNames": {"minLength": 1, "type": "string"}, "type": "object"}` | `propertyNames` must be of `type` string, so all keywords extraneous for the `type` to that have no influence |
+| `{"minProperties": 1, "propertyNames": false, "type": ["number", "object"]}` | `{"type": "number"}` | `propertyNames` as `false` schema, with the requirement of a property defined in case of `type` object prevents a JSON object to ever be valid |
 <!-- TABLE END -->

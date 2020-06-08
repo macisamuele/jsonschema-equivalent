@@ -2,6 +2,7 @@
 //! <https://tools.ietf.org/html/draft-handrews-json-schema-validation-01>
 mod additional_properties;
 mod macro_;
+mod property_names;
 mod required;
 mod type_;
 
@@ -17,6 +18,7 @@ static UPDATE_SCHEMA_METHODS: &[fn(&mut Value) -> bool] = &[
     macro_::maximum_minimum_related_keywords::update_min_max_related_keywords,
     type_::optimise_keyword_type,
     type_::remove_extraneous_keys_keyword_type,
+    property_names::optimise_property_names,
     additional_properties::remove_empty_additional_properties,
     required::remove_empty_required,
 ];

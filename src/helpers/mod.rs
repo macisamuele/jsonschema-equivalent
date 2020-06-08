@@ -1,3 +1,4 @@
+pub(crate) mod intersect;
 pub(crate) mod is;
 pub(crate) mod replace;
 pub(crate) mod types;

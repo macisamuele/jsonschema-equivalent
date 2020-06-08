@@ -20,6 +20,7 @@ logging = []  # logging is automatically enabled on debug builds via `build.rs`
 env_logger = "0"
 pathsep = "0"
 test-case = "1"
+jsonschema = "0"
 
 [dependencies]
 lazy_static = "1"
