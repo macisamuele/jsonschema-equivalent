@@ -42,7 +42,7 @@ pub fn log_processing(_attr: TokenStream, item: TokenStream) -> TokenStream {
                     let log_final_schema: serde_json::Value = result.clone();
                     log::info!("{}", serde_json::json!({
                         "method": #method_name,
-                        "elapsed_time_s": (end - start).as_secs_f64(),
+                        "elapsed_time_s": format!("{:.9}", (end - start).as_secs_f64()),
                         "input_schema": input_schema,
                         "output_schema": result,
                         "is_schema_updated": result != &input_schema,

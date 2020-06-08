@@ -5,7 +5,7 @@ use std::convert::TryFrom;
 ///
 /// The usage of the enum allows to have a faster processing (less string comparisons)
 /// as well as smaller memory footprint as the enum instance uses 2 bytes.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, Hash, Eq, Ord, PartialEq, PartialOrd)]
 pub(crate) enum PrimitiveType {
     Array,
     Boolean,

@@ -1,12 +1,9 @@
 use crate::{
-    helpers::{get_primitive_types, preserve_keys, to_json_schema_primitive_types},
+    helpers::{preserve_keys, replace, types::get_primitive_types},
     primitive_type::PrimitiveType,
 };
 use serde_json::Value;
-use std::{
-    collections::HashSet,
-    convert::{identity, TryFrom},
-};
+use std::collections::HashSet;
 
 lazy_static::lazy_static! {
     static ref KEYWORDS_TYPE_ARRAY: HashSet<&'static str> = [
@@ -84,50 +81,19 @@ lazy_static::lazy_static! {
     ].iter().cloned().collect();
 }
 
+/// Removes duplicated types, avoid not need of list and remove the keyword if all the types are included
 #[rule_processor_logger::log_processing]
-pub(crate) fn optimise_keyword_type_if_array(schema: &mut Value) -> &mut Value {
+pub(crate) fn optimise_keyword_type(schema: &mut Value) -> &mut Value {
     let schema_object = if let Some(value) = schema.as_object_mut() {
         value
     } else {
         return schema;
     };
 
-    if let Some(Value::Array(items)) = schema_object.get("type") {
-        let types = items
-            .iter()
-            .map(|value| PrimitiveType::try_from(value).ok())
-            .filter_map(identity)
-            .collect::<Vec<_>>();
-        if types.is_empty() {
-            let _ = schema_object.remove("type");
-        } else if types.len() == 1 {
-            let _ = schema_object.remove("type");
-            let _ = schema_object.insert("type".to_string(), Value::String(types[0].to_string()));
-        } else if types.contains(&PrimitiveType::Integer) && types.contains(&PrimitiveType::Number)
-        {
-            if types.len() == 2 {
-                let _ = schema_object.insert(
-                    "type".to_string(),
-                    Value::String(PrimitiveType::Number.to_string()),
-                );
-            } else {
-                let items = schema_object
-                    .get_mut("type")
-                    .and_then(Value::as_array_mut)
-                    .expect("`type` is present and of type array as we found multiple types");
-                let index = items.iter().enumerate().find_map(|(index, item)| {
-                    if item.as_str() == Some("integer") {
-                        Some(index)
-                    } else {
-                        None
-                    }
-                });
-                let _ = items.remove(index.expect(
-                    "Index will be present as we know that `integer` in contained in items",
-                ));
-            }
-        }
-    }
+    let _ = replace::type_with(
+        schema_object,
+        &get_primitive_types(schema_object.get("type")),
+    );
     schema
 }
 
@@ -141,7 +107,7 @@ pub(crate) fn remove_extraneous_keys_keyword_type(schema: &mut Value) -> &mut Va
         return schema;
     };
 
-    let mut primitive_types = get_primitive_types(schema_object.get("type"));
+    let primitive_types = get_primitive_types(schema_object.get("type"));
     if !primitive_types.is_empty() {
         let mut keys_to_reserve = HashSet::<&'static str>::new();
         for primtive_type in &primitive_types {
@@ -170,18 +136,15 @@ pub(crate) fn remove_extraneous_keys_keyword_type(schema: &mut Value) -> &mut Va
             }
         }
 
-        preserve_keys(schema_object, &keys_to_reserve);
-
-        if let Some(json_primitive_types) = to_json_schema_primitive_types(&mut primitive_types) {
-            let _ = schema_object.insert("type".to_string(), json_primitive_types);
-        }
+        let _ = preserve_keys(schema_object, &keys_to_reserve);
+        let _ = replace::type_with(schema_object, &primitive_types);
     }
     schema
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{optimise_keyword_type_if_array, remove_extraneous_keys_keyword_type};
+    use super::{optimise_keyword_type, remove_extraneous_keys_keyword_type};
     use crate::keywords::update_schema;
     use serde_json::{json, Value};
     use test_case::test_case;
@@ -295,10 +258,10 @@ mod tests {
     #[test_case(json!({"type": []}) => json!({}))]
     #[test_case(json!({"type": ["string"]}) => json!({"type": "string"}))]
     #[test_case(json!({"type": ["integer", "number"]}) => json!({"type": "number"}))]
-    #[test_case(json!({"type": ["string", "integer", "number"]}) => json!({"type": ["string", "number"]}))]
-    fn test_optimise_keyword_type_if_array(mut schema: Value) -> Value {
+    #[test_case(json!({"type": ["integer", "number", "string"]}) => json!({"type": ["number", "string"]}))]
+    fn test_optimise_keyword_type(mut schema: Value) -> Value {
         crate::init_logger();
-        let _ = optimise_keyword_type_if_array(&mut schema);
+        let _ = optimise_keyword_type(&mut schema);
         schema
     }
 

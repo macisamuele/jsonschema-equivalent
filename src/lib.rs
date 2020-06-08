@@ -57,10 +57,20 @@
     variant_size_differences
 )]
 
-// TODO: deal with schema elision.
-// An example is: `{"type": "number", "minimum": 2, "maximum": 1}`
-// the schema is impossible and so it would be equivalent to `false`
-// This means that a schema can be migrated from JSON object to JSON boolean
+// Testing macro defined before any `mod`ule import in order to provide macro access
+#[cfg(test)]
+macro_rules! hash_set {
+    ($($elem: expr),* $(,)*) => {
+        vec![$($elem),*].iter().cloned().collect::<HashSet<_>>()
+    };
+}
+
+#[cfg(test)]
+macro_rules! btree_set {
+    ($($elem: expr),* $(,)*) => {
+        vec![$($elem),*].iter().cloned().collect::<BTreeSet<_>>()
+    };
+}
 
 pub(crate) mod constants;
 pub(crate) mod helpers;
