@@ -61,4 +61,12 @@
 | `{"const": "some-text", "type": "array"}` | `false` | Incongruent types between `const` value and defined type make the schema a `false` schema |
 | `{"enum": ["some-text", 1], "type": "string"}` | `{"enum": ["some-text"], "type": "string"}` | Enum values that cannot be valid according to the schema are elided |
 | `{"enum": [1], "type": "string"}` | `false` | No `enum` value can be valid against the schema, so it results into a `false` schema |
+| `{"allOf": [true], "type": "object"}` | `{"type": "object"}` | `true` schema in `allOf` does not add restrictions, so it can be removed |
+| `{"allOf": [false], "type": "object"}` | `false` | `false` schema in `allOf` keyword results into a `false` schema |
+| `{"allOf": [{"type": "integer"}, {"type": "number"}]}` | `{"allOf": [{"type": "integer"}, {"type": "integer"}]}` | only common types survive on `allOf` |
+| `{"allOf": [{"type": ["boolean", "integer"]}, {"type": "number"}]}` | `{"allOf": [{"type": "integer"}, {"type": "integer"}]}` | only common types survive on `allOf` |
+| `{"allOf": [{"type": "boolean"}, {"type": "number"}]}` | `false` | `allOf` without common types results into a `false` schema |
+| `{"allOf": [{"type": "integer"}], "type": "boolean"}` | `false` | `allOf` without common types (considering the parent-schema types) results into a `false` schema |
+| `{"anyOf": [{"type": "string"}, false], "type": "object"}` | `false` | `false` schema in `anyOf` results into `false` schema |
+| `{"anyOf": [{"type": "string"}, true], "type": "object"}` | `{"type": "object"}` | `true` schema in `anyOf` does not add restrictions, so it can be removed |
 <!-- TABLE END -->

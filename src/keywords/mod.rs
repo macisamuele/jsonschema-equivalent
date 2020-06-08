@@ -5,6 +5,8 @@ mod const_;
 mod enum_;
 mod macro_;
 mod property_names;
+mod all_of;
+mod any_of;
 mod required;
 mod type_;
 
@@ -23,6 +25,8 @@ static UPDATE_SCHEMA_METHODS: &[fn(&mut Value) -> bool] = &[
     macro_::maximum_minimum_related_keywords::update_min_max_related_keywords,
     const_::simple_const_cleanup,
     enum_::simple_enum_cleanup,
+    all_of::simplify_all_of,
+    any_of::simplify_any_of,
     property_names::optimise_property_names,
     additional_properties::remove_empty_additional_properties,
     required::remove_empty_required,
@@ -100,6 +104,7 @@ mod tests {
     #[test_case(json!({"properties": {"prop": {"type": "string", "minimum": 1}}}) => json!({"properties": {"prop": {"type": "string"}}}))]
     #[test_case(json!({"allOf": [{"type": "string", "minimum": 1}]}) => json!({"allOf": [{"type": "string"}]}))]
     fn test_update_schema_descend_schema(mut schema: Value) -> Value {
+        crate::init_logger();
         let _ = update_schema(&mut schema);
         schema
     }
