@@ -88,6 +88,11 @@ pub fn jsonschema_equivalent(mut schema: Value) -> Value {
 }
 
 #[cfg(test)]
+pub(crate) fn init_logger() {
+    let _ = env_logger::builder().is_test(true).try_init();
+}
+
+#[cfg(test)]
 mod tests {
     use super::{jsonschema_equivalent, jsonschema_equivalent_ref};
     use serde_json::{json, Value};

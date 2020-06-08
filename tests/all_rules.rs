@@ -1,6 +1,7 @@
 use jsonschema_equivalent::jsonschema_equivalent_ref;
 use pathsep::{join_path, path_separator};
 use serde_json::{from_str, Value};
+use std::io::Write;
 use std::str::FromStr;
 
 /// This method does expose the one-liner pretty-print value of a given JSON value
@@ -154,6 +155,11 @@ fn load_rules() -> Vec<Rule> {
 
 #[test]
 fn test_all_rules() {
+    let _ = env_logger::builder()
+        .format(|buf, record| writeln!(buf, "{}", record.args()))
+        .is_test(true)
+        .try_init();
+
     let mut rules = load_rules();
     let mut errors = Vec::<(&str, Value, &Value, &Value)>::new();
     for rule in &mut rules {

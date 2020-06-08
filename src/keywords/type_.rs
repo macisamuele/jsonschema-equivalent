@@ -81,6 +81,7 @@ lazy_static::lazy_static! {
     ].iter().cloned().collect();
 }
 
+#[rule_processor_logger::log_processing]
 pub(crate) fn optimise_keyword_type_if_array(schema: &mut Value) -> &mut Value {
     let schema_object = if let Some(value) = schema.as_object_mut() {
         value
@@ -129,6 +130,7 @@ pub(crate) fn optimise_keyword_type_if_array(schema: &mut Value) -> &mut Value {
 
 /// Removes all the schema keywords that are irrelevant/incongruent with the presence
 /// of a specific `type` keyword
+#[rule_processor_logger::log_processing]
 pub(crate) fn remove_extraneous_keys_keyword_type(schema: &mut Value) -> &mut Value {
     let schema_object = if let Some(value) = schema.as_object_mut() {
         value
@@ -271,6 +273,7 @@ mod tests {
     #[test_case(json!({"type": "string", "pattern": "key[0-9]+"}))]
     #[allow(clippy::needless_pass_by_value)]
     fn test_remove_extraneous_keys_keyword_type_does_not_remove_keys(schema: Value) {
+        crate::init_logger();
         let mut cloned_schema = schema.clone();
         remove_extraneous_keys_keyword_type(&mut cloned_schema);
         assert_eq!(schema, cloned_schema);
@@ -303,6 +306,7 @@ mod tests {
     #[test_case(json!({"type": ["number", "string"], "minLength": 1}) => json!({"type": ["number", "string"], "minLength": 1}))]
     #[test_case(json!({"type": ["number", "string"], "minLength": 1, "minItems": 1}) => json!({"type": ["number", "string"], "minLength": 1}))]
     fn test_remove_extraneous_keys_keyword_type_does_remove_keys(mut schema: Value) -> Value {
+        crate::init_logger();
         let _ = remove_extraneous_keys_keyword_type(&mut schema);
         schema
     }
@@ -312,12 +316,14 @@ mod tests {
     #[test_case(json!({"type": ["integer", "number"]}) => json!({"type": "number"}))]
     #[test_case(json!({"type": ["string", "integer", "number"]}) => json!({"type": ["string", "number"]}))]
     fn test_optimise_keyword_type_if_array(mut schema: Value) -> Value {
+        crate::init_logger();
         let _ = optimise_keyword_type_if_array(&mut schema);
         schema
     }
 
     #[test_case(json!({"type": ["number", "integer"], "minLength": 1}) => json!({"type": "number"}))]
     fn test_keywords_elided_with_with_correct_order(mut schema: Value) -> Value {
+        crate::init_logger();
         let _ = update_schema(&mut schema);
         schema
     }

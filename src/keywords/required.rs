@@ -1,6 +1,7 @@
 use serde_json::Value;
 
 /// Removes empty `required` schemas.
+#[rule_processor_logger::log_processing]
 pub(crate) fn remove_empty_required(schema: &mut Value) -> &mut Value {
     match schema.get("required") {
         Some(Value::Array(array)) if array.is_empty() => {
@@ -24,6 +25,7 @@ mod tests {
     #[test_case(json!({"required": []}) => json!({}))]
     #[test_case(json!({"required": ["key"]}) => json!({"required": ["key"]}))]
     fn test_remove_empty_required(mut schema: Value) -> Value {
+        crate::init_logger();
         remove_empty_required(&mut schema);
         schema
     }
