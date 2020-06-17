@@ -1,5 +1,5 @@
 use crate::{
-    helpers::{get_primitive_types, preserve_keys},
+    helpers::{get_primitive_types, preserve_keys, to_json_schema_primitive_types},
     primitive_type::PrimitiveType,
 };
 use serde_json::Value;
@@ -99,14 +99,14 @@ pub(crate) fn optimise_keyword_type_if_array(schema: &mut Value) -> &mut Value {
             .filter_map(identity)
             .collect::<Vec<_>>();
         if types.is_empty() {
-            schema_object.remove("type");
+            let _ = schema_object.remove("type");
         } else if types.len() == 1 {
-            schema_object.remove("type");
-            schema_object.insert("type".to_string(), Value::String(types[0].to_string()));
+            let _ = schema_object.remove("type");
+            let _ = schema_object.insert("type".to_string(), Value::String(types[0].to_string()));
         } else if types.contains(&PrimitiveType::Integer) && types.contains(&PrimitiveType::Number)
         {
             if types.len() == 2 {
-                schema_object.insert(
+                let _ = schema_object.insert(
                     "type".to_string(),
                     Value::String(PrimitiveType::Number.to_string()),
                 );
@@ -122,7 +122,7 @@ pub(crate) fn optimise_keyword_type_if_array(schema: &mut Value) -> &mut Value {
                         None
                     }
                 });
-                items.remove(index.expect(
+                let _ = items.remove(index.expect(
                     "Index will be present as we know that `integer` in contained in items",
                 ));
             }
@@ -141,60 +141,40 @@ pub(crate) fn remove_extraneous_keys_keyword_type(schema: &mut Value) -> &mut Va
         return schema;
     };
 
-    let mut primitive_types = get_primitive_types(schema_object);
+    let mut primitive_types = get_primitive_types(schema_object.get("type"));
     if !primitive_types.is_empty() {
         let mut keys_to_reserve = HashSet::<&'static str>::new();
         for primtive_type in &primitive_types {
             match primtive_type {
                 PrimitiveType::Array => KEYWORDS_TYPE_ARRAY.iter().for_each(|key| {
-                    keys_to_reserve.insert(key);
+                    let _ = keys_to_reserve.insert(key);
                 }),
                 PrimitiveType::Boolean => KEYWORDS_TYPE_BOOLEAN.iter().for_each(|key| {
-                    keys_to_reserve.insert(key);
+                    let _ = keys_to_reserve.insert(key);
                 }),
                 PrimitiveType::Integer => KEYWORDS_TYPE_INTEGER.iter().for_each(|key| {
-                    keys_to_reserve.insert(key);
+                    let _ = keys_to_reserve.insert(key);
                 }),
                 PrimitiveType::Null => KEYWORDS_TYPE_NULL.iter().for_each(|key| {
-                    keys_to_reserve.insert(key);
+                    let _ = keys_to_reserve.insert(key);
                 }),
                 PrimitiveType::Number => KEYWORDS_TYPE_NUMBER.iter().for_each(|key| {
-                    keys_to_reserve.insert(key);
+                    let _ = keys_to_reserve.insert(key);
                 }),
                 PrimitiveType::Object => KEYWORDS_TYPE_OBJECT.iter().for_each(|key| {
-                    keys_to_reserve.insert(key);
+                    let _ = keys_to_reserve.insert(key);
                 }),
                 PrimitiveType::String => KEYWORDS_TYPE_STRING.iter().for_each(|key| {
-                    keys_to_reserve.insert(key);
+                    let _ = keys_to_reserve.insert(key);
                 }),
             }
         }
 
         preserve_keys(schema_object, &keys_to_reserve);
-        if primitive_types.contains(&PrimitiveType::Integer)
-            && primitive_types.contains(&PrimitiveType::Number)
-        {
-            let _ = primitive_types.remove(&PrimitiveType::Integer);
-        }
 
-        let schema_type_mut = schema_object
-            .get_mut("type")
-            .expect("`type` keyword is present as we have multiple types");
-        if primitive_types.len() == 1 {
-            let first_type_str = primitive_types
-                .iter()
-                .next()
-                .expect("It will be present as length is 1")
-                .to_string();
-            *schema_type_mut = Value::String(first_type_str)
-        } else {
-            *schema_type_mut = Value::Array(
-                primitive_types
-                    .iter()
-                    .map(|value| Value::String(value.to_string()))
-                    .collect(),
-            )
-        };
+        if let Some(json_primitive_types) = to_json_schema_primitive_types(&mut primitive_types) {
+            let _ = schema_object.insert("type".to_string(), json_primitive_types);
+        }
     }
     schema
 }
@@ -276,7 +256,7 @@ mod tests {
     fn test_remove_extraneous_keys_keyword_type_does_not_remove_keys(schema: Value) {
         crate::init_logger();
         let mut cloned_schema = schema.clone();
-        remove_extraneous_keys_keyword_type(&mut cloned_schema);
+        let _ = remove_extraneous_keys_keyword_type(&mut cloned_schema);
         assert_eq!(schema, cloned_schema);
     }
 
@@ -325,7 +305,7 @@ mod tests {
     #[test_case(json!({"type": ["number", "integer"], "minLength": 1}) => json!({"type": "number"}))]
     fn test_keywords_elided_with_with_correct_order(mut schema: Value) -> Value {
         crate::init_logger();
-        let _ = update_schema(&mut schema);
+        update_schema(&mut schema);
         schema
     }
 }

@@ -22,57 +22,53 @@ static UPDATE_SCHEMA_METHODS: &[fn(&mut Value) -> &mut Value] = &[
 ];
 
 /// Perform the schema optimisaton without descending the schema
-fn update_schema_no_recursive(schema: &mut Value) -> &mut Value {
+fn update_schema_no_recursive(schema: &mut Value) {
     let mut result_schema = schema;
     for method in UPDATE_SCHEMA_METHODS {
         result_schema = method(result_schema);
         if let Value::Bool(_) = result_schema {
             // If the schema is a `true` or `false` schema
             // we know that we cannot optimise it even more
-            return result_schema;
+            return;
         }
     }
-    result_schema
 }
 
 /// Discend the schema and optimise it.
-pub(crate) fn update_schema(schema: &mut Value) -> &mut Value {
-    match schema {
-        Value::Object(schema_object) => {
-            for (key, subschema) in schema_object {
-                if KEYWORDS_WITH_SUBSCHEMAS.contains(&key.as_ref()) {
-                    match subschema {
-                        Value::Object(subschema_object) => {
-                            if KEYWORDS_WITH_DIRECT_SUBSCHEMAS.contains(&key.as_ref()) {
-                                // In case of schemas where the keyword value MUST be a valid JSON Schema
-                                // ie. `{"additionalProperties": {"type": "string"}}`
-                                update_schema(subschema);
-                            } else {
-                                // In case of schemas where the keyword holds a JSON Object and its
-                                // values MUST be a valid JSON Schema
-                                // ie. `{"properties": {"property" {"type": "string"}}}`
-                                for subschema_value in subschema_object.values_mut() {
-                                    update_schema(subschema_value);
-                                }
-                            }
-                        }
-                        Value::Array(subschema_array) => {
-                            // In case of schemas where the keyword holds a JSON Array and its
+pub(crate) fn update_schema(schema: &mut Value) {
+    if let Value::Object(schema_object) = schema {
+        for (key, subschema) in schema_object {
+            if KEYWORDS_WITH_SUBSCHEMAS.contains(&key.as_ref()) {
+                match subschema {
+                    Value::Object(subschema_object) => {
+                        if KEYWORDS_WITH_DIRECT_SUBSCHEMAS.contains(&key.as_ref()) {
+                            // In case of schemas where the keyword value MUST be a valid JSON Schema
+                            // ie. `{"additionalProperties": {"type": "string"}}`
+                            update_schema(subschema);
+                        } else {
+                            // In case of schemas where the keyword holds a JSON Object and its
                             // values MUST be a valid JSON Schema
-                            // ie. `{"allOf": [{"type": "string"}]}`
-                            for subschema_value in subschema_array {
+                            // ie. `{"properties": {"property" {"type": "string"}}}`
+                            for subschema_value in subschema_object.values_mut() {
                                 update_schema(subschema_value);
                             }
                         }
-                        _ => {}
                     }
-                    update_schema(subschema);
+                    Value::Array(subschema_array) => {
+                        // In case of schemas where the keyword holds a JSON Array and its
+                        // values MUST be a valid JSON Schema
+                        // ie. `{"allOf": [{"type": "string"}]}`
+                        for subschema_value in subschema_array {
+                            update_schema(subschema_value);
+                        }
+                    }
+                    _ => {}
                 }
+                update_schema(subschema);
             }
-
-            update_schema_no_recursive(schema)
         }
-        _ => schema,
+
+        update_schema_no_recursive(schema)
     }
 }
 

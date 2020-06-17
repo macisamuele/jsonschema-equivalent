@@ -1,4 +1,4 @@
-use crate::helpers::replace_schema_with_false_schema;
+use crate::helpers::replace;
 use serde_json::Value;
 
 /// Update schema with incongruent `exclusiveMaximum` and `exclusiveMinimum`.
@@ -11,7 +11,7 @@ fn update_exclusive_maximum_minimum(schema: &mut Value) -> &mut Value {
         schema.get("exclusiveMinimum").map(Value::as_f64),
     ) {
         (Some(max_), Some(min_)) if max_ < min_ => {
-            replace_schema_with_false_schema(schema);
+            replace::with_false_schema(schema);
         }
         _ => {}
     };
@@ -28,7 +28,7 @@ fn update_max_min_items(schema: &mut Value) -> &mut Value {
         schema.get("minItems").map(Value::as_f64),
     ) {
         (Some(max_), Some(min_)) if max_ < min_ => {
-            replace_schema_with_false_schema(schema);
+            replace::with_false_schema(schema);
         }
         _ => {}
     };
@@ -45,7 +45,7 @@ fn update_max_min_length(schema: &mut Value) -> &mut Value {
         schema.get("minLength").map(Value::as_f64),
     ) {
         (Some(max_), Some(min_)) if max_ < min_ => {
-            replace_schema_with_false_schema(schema);
+            replace::with_false_schema(schema);
         }
         _ => {}
     };
@@ -62,7 +62,7 @@ fn update_max_min_properties(schema: &mut Value) -> &mut Value {
         schema.get("minProperties").map(Value::as_f64),
     ) {
         (Some(max_), Some(min_)) if max_ < min_ => {
-            replace_schema_with_false_schema(schema);
+            replace::with_false_schema(schema);
         }
         _ => {}
     };
@@ -79,7 +79,7 @@ fn update_maximum_minimum(schema: &mut Value) -> &mut Value {
         schema.get("minimum").map(Value::as_f64),
     ) {
         (Some(max_), Some(min_)) if max_ < min_ => {
-            replace_schema_with_false_schema(schema);
+            replace::with_false_schema(schema);
         }
         _ => {}
     };
@@ -127,7 +127,7 @@ mod tests {
     #[test_case(json!({"exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!(false))]
     fn test_update_exclusive_maximum_minimum(mut value: Value) -> Value {
         crate::init_logger();
-        update_exclusive_maximum_minimum(&mut value);
+        let _ = update_exclusive_maximum_minimum(&mut value);
         value
     }
 
@@ -136,7 +136,7 @@ mod tests {
     #[test_case(json!({"maxItems": 1, "minItems": 2}) => json!(false))]
     fn test_update_max_min_items(mut value: Value) -> Value {
         crate::init_logger();
-        update_max_min_items(&mut value);
+        let _ = update_max_min_items(&mut value);
         value
     }
 
@@ -145,7 +145,7 @@ mod tests {
     #[test_case(json!({"maxLength": 1, "minLength": 2}) => json!(false))]
     fn test_update_max_min_length(mut value: Value) -> Value {
         crate::init_logger();
-        update_max_min_length(&mut value);
+        let _ = update_max_min_length(&mut value);
         value
     }
 
@@ -154,7 +154,7 @@ mod tests {
     #[test_case(json!({"maxProperties": 1, "minProperties": 2}) => json!(false))]
     fn test_update_max_min_properties(mut value: Value) -> Value {
         crate::init_logger();
-        update_max_min_properties(&mut value);
+        let _ = update_max_min_properties(&mut value);
         value
     }
 
@@ -163,7 +163,7 @@ mod tests {
     #[test_case(json!({"maximum": 1, "minimum": 2}) => json!(false))]
     fn test_update_maximum_minimum(mut value: Value) -> Value {
         crate::init_logger();
-        update_maximum_minimum(&mut value);
+        let _ = update_maximum_minimum(&mut value);
         value
     }
 
@@ -173,7 +173,7 @@ mod tests {
     #[test_case(json!({"type": "number", "maximum": 1, "minimum": 2}) => json!(false))]
     fn test_update_min_max_related_keywords(mut value: Value) -> Value {
         crate::init_logger();
-        update_min_max_related_keywords(&mut value);
+        let _ = update_min_max_related_keywords(&mut value);
         value
     }
 }

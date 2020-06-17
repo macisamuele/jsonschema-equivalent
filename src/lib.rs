@@ -29,28 +29,31 @@
 //! println!("Equivalent schema: {}", equivalent_schema);
 //! ```
 #![warn(
-    clippy::pedantic,
+    clippy::cast_possible_truncation,
     clippy::doc_markdown,
-    clippy::redundant_closure,
     clippy::explicit_iter_loop,
+    clippy::integer_arithmetic,
     clippy::match_same_arms,
     clippy::needless_borrow,
-    clippy::print_stdout,
-    clippy::integer_arithmetic,
-    clippy::cast_possible_truncation,
-    clippy::result_unwrap_used,
-    clippy::result_map_unwrap_or_else,
-    clippy::option_unwrap_used,
-    clippy::option_map_unwrap_or_else,
-    clippy::option_map_unwrap_or,
-    clippy::trivially_copy_pass_by_ref,
     clippy::needless_pass_by_value,
-    missing_docs,
+    clippy::option_map_unwrap_or,
+    clippy::option_map_unwrap_or_else,
+    clippy::option_unwrap_used,
+    clippy::pedantic,
+    clippy::print_stdout,
+    clippy::redundant_closure,
+    clippy::result_map_unwrap_or_else,
+    clippy::result_unwrap_used,
+    clippy::trivially_copy_pass_by_ref,
     missing_debug_implementations,
+    missing_docs,
     trivial_casts,
+    unreachable_pub,
+    unsafe_code,
     unused_extern_crates,
     unused_import_braces,
     unused_qualifications,
+    unused_results,
     variant_size_differences
 )]
 
@@ -70,7 +73,8 @@ use serde_json::Value;
 #[must_use]
 #[inline]
 pub fn jsonschema_equivalent_ref(schema: &mut Value) -> &mut Value {
-    keywords::update_schema(schema)
+    keywords::update_schema(schema);
+    schema
 }
 
 /// Generate an equivalent schema to the schema provided as input
@@ -92,7 +96,11 @@ pub fn jsonschema_equivalent(mut schema: Value) -> Value {
 
 #[cfg(test)]
 pub(crate) fn init_logger() {
-    let _ = env_logger::builder().is_test(true).try_init();
+    use std::io::Write;
+    let _ = env_logger::builder()
+        .format(|buf, record| writeln!(buf, "{}", record.args()))
+        .is_test(true)
+        .try_init();
 }
 
 #[cfg(test)]

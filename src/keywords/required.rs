@@ -26,7 +26,7 @@ mod tests {
     #[test_case(json!({"required": ["key"]}) => json!({"required": ["key"]}))]
     fn test_remove_empty_required(mut schema: Value) -> Value {
         crate::init_logger();
-        remove_empty_required(&mut schema);
+        let _ = remove_empty_required(&mut schema);
         schema
     }
 }
