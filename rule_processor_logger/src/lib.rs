@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, FnArg, ItemFn, Pat};
@@ -27,30 +28,23 @@ pub fn log_processing(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let output = quote! {
         #(#attrs)*
         #vis #sig {
-            cfg_if::cfg_if! {
-                if #[cfg(feature = "logging")] {
-                    let input_schema: serde_json::Value = #input_param_name.clone();
-                    let start = std::time::Instant::now();
-                }
-            }
+            #[cfg(feature = "logging")]
+            let input_schema: serde_json::Value = #input_param_name.clone();
+            #[cfg(feature = "logging")]
+            let start = std::time::Instant::now();
 
-            let result = #block;
+            let is_schema_updated = #block;
 
-            cfg_if::cfg_if! {
-                if #[cfg(feature = "logging")] {
-                    let end = std::time::Instant::now();
-                    let log_final_schema: serde_json::Value = result.clone();
-                    log::info!("{}", serde_json::json!({
-                        "method": #method_name,
-                        "elapsed_time_s": format!("{:.9}", (end - start).as_secs_f64()),
-                        "input_schema": input_schema,
-                        "output_schema": result,
-                        "is_schema_updated": result != &input_schema,
-                    }));
-                }
-            }
+            #[cfg(feature = "logging")]
+            log::info!("{}", serde_json::json!({
+                "method": #method_name,
+                "elapsed_time_s": format!("{:.9}", (std::time::Instant::now() - start).as_secs_f64()),
+                "input_schema": input_schema,
+                "output_schema": #input_param_name,
+                "is_schema_updated": is_schema_updated
+            }));
 
-            result
+            is_schema_updated
         }
     };
 

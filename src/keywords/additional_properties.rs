@@ -3,19 +3,21 @@ use serde_json::Value;
 
 /// Removes empty `additionalProperties` schemas.
 #[rule_processor_logger::log_processing]
-pub(crate) fn remove_empty_additional_properties(schema: &mut Value) -> &mut Value {
+pub(crate) fn remove_empty_additional_properties(schema: &mut Value) -> bool {
     let schema_object = if let Some(value) = schema.as_object_mut() {
         value
     } else {
-        return schema;
+        return false;
     };
     if schema_object
         .get("additionalProperties")
         .map_or(false, is::true_schema)
     {
         let _ = schema_object.remove("additionalProperties");
+        true
+    } else {
+        false
     }
-    schema
 }
 
 #[cfg(test)]

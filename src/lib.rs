@@ -78,12 +78,24 @@ mod keywords;
 pub(crate) mod primitive_type;
 use serde_json::Value;
 
+/// Maximum number of allowed rounds to update the schema. This is needed to prevent, unlikely but possible, infinite loop
+static MAX_UPDATE_SCHEMA_ITERATIONS: usize = 100;
+
 /// Optimise input schema by removing extraneous/incongruent keys replacing equivalent
 /// schemas with more performant ones to be validates against.
 #[must_use]
 #[inline]
 pub fn jsonschema_equivalent_ref(schema: &mut Value) -> &mut Value {
-    keywords::update_schema(schema);
+    for _ in 0..MAX_UPDATE_SCHEMA_ITERATIONS {
+        if !keywords::update_schema(schema) {
+            return schema;
+        }
+    }
+    log::info!(
+        "Optimisation, after {} rounds, is not complete for schema={}",
+        MAX_UPDATE_SCHEMA_ITERATIONS,
+        schema
+    );
     schema
 }
 

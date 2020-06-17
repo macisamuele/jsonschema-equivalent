@@ -5,85 +5,85 @@ use serde_json::Value;
 /// Replaces the schema with `false` schema if `exclusiveMaximum`
 /// is smaller than `exclusiveMinimum`
 #[rule_processor_logger::log_processing]
-fn update_exclusive_maximum_minimum(schema: &mut Value) -> &mut Value {
+fn update_exclusive_maximum_minimum(schema: &mut Value) -> bool {
     match (
         schema.get("exclusiveMaximum").map(Value::as_f64),
         schema.get("exclusiveMinimum").map(Value::as_f64),
     ) {
         (Some(max_), Some(min_)) if max_ < min_ => {
             replace::with_false_schema(schema);
+            true
         }
-        _ => {}
-    };
-    schema
+        _ => false
+    }
 }
 
 /// Update schema with incongruent `maxItems` and `minItems`.
 /// Replaces the schema with `false` schema if `maxItems`
 /// is smaller than `minItems`
 #[rule_processor_logger::log_processing]
-fn update_max_min_items(schema: &mut Value) -> &mut Value {
+fn update_max_min_items(schema: &mut Value) -> bool {
     match (
         schema.get("maxItems").map(Value::as_f64),
         schema.get("minItems").map(Value::as_f64),
     ) {
         (Some(max_), Some(min_)) if max_ < min_ => {
             replace::with_false_schema(schema);
+            true
         }
-        _ => {}
-    };
-    schema
+        _ => false
+    }
 }
 
 /// Update schema with incongruent `maxLength` and `minLength`.
 /// Replaces the schema with `false` schema if `maxLength`
 /// is smaller than `minLength`
 #[rule_processor_logger::log_processing]
-fn update_max_min_length(schema: &mut Value) -> &mut Value {
+fn update_max_min_length(schema: &mut Value) -> bool {
     match (
         schema.get("maxLength").map(Value::as_f64),
         schema.get("minLength").map(Value::as_f64),
     ) {
         (Some(max_), Some(min_)) if max_ < min_ => {
             replace::with_false_schema(schema);
+            true
         }
-        _ => {}
-    };
-    schema
+        _ => false
+    }
 }
 
 /// Update schema with incongruent `maxProperties` and `minProperties`.
 /// Replaces the schema with `false` schema if `maxProperties`
 /// is smaller than `minProperties`
 #[rule_processor_logger::log_processing]
-fn update_max_min_properties(schema: &mut Value) -> &mut Value {
+fn update_max_min_properties(schema: &mut Value) -> bool {
     match (
         schema.get("maxProperties").map(Value::as_f64),
         schema.get("minProperties").map(Value::as_f64),
     ) {
         (Some(max_), Some(min_)) if max_ < min_ => {
             replace::with_false_schema(schema);
+            true
         }
-        _ => {}
-    };
-    schema
+        _ => false
+    }
 }
 
 /// Update schema with incongruent `maximum` and `minimum`.
 /// Replaces the schema with `false` schema if `maximum`
 /// is smaller than `minimum`
 #[rule_processor_logger::log_processing]
-fn update_maximum_minimum(schema: &mut Value) -> &mut Value {
+fn update_maximum_minimum(schema: &mut Value) -> bool {
     match (
         schema.get("maximum").map(Value::as_f64),
         schema.get("minimum").map(Value::as_f64),
     ) {
         (Some(max_), Some(min_)) if max_ < min_ => {
             replace::with_false_schema(schema);
+            true
         }
-        _ => {}
-    };
-    schema
+        _ => false
+    }
 }
 
 /// Update the schema by ensuring that (max-min) relations are satisfiable.
@@ -92,12 +92,12 @@ fn update_maximum_minimum(schema: &mut Value) -> &mut Value {
 /// `maxLength`, `maxProperties`, `maximum`, `minItems`, `minLength`, `minProperties`,
 /// `minimum` keywords
 #[rule_processor_logger::log_processing]
-pub(crate) fn update_min_max_related_keywords(schema: &mut Value) -> &mut Value {
+pub(crate) fn update_min_max_related_keywords(schema: &mut Value) -> bool {
     if schema.get("type").is_some() {
         // We're applying the keyword updates only if `type` keyword is present because
         // `[1, 2, 3]` would be valid against a schema like
         // `{"maximum": 1, "minimum": 2, "minItems": 1}`
-        let mut result_schema = schema;
+        let mut schema_updated = false;
         for method in &[
             update_max_min_items,
             update_max_min_length,
@@ -105,11 +105,11 @@ pub(crate) fn update_min_max_related_keywords(schema: &mut Value) -> &mut Value 
             update_exclusive_maximum_minimum,
             update_maximum_minimum,
         ] {
-            result_schema = method(result_schema);
+            schema_updated |= method(schema);
         }
-        result_schema
+        schema_updated
     } else {
-        schema
+        false
     }
 }
 

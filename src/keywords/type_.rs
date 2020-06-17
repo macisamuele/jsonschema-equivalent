@@ -83,32 +83,33 @@ lazy_static::lazy_static! {
 
 /// Removes duplicated types, avoid not need of list and remove the keyword if all the types are included
 #[rule_processor_logger::log_processing]
-pub(crate) fn optimise_keyword_type(schema: &mut Value) -> &mut Value {
+pub(crate) fn optimise_keyword_type(schema: &mut Value) -> bool {
     let schema_object = if let Some(value) = schema.as_object_mut() {
         value
     } else {
-        return schema;
+        return false;
     };
 
-    let _ = replace::type_with(
+    replace::type_with(
         schema_object,
         &get_primitive_types(schema_object.get("type")),
-    );
-    schema
+    )
 }
 
 /// Removes all the schema keywords that are irrelevant/incongruent with the presence
 /// of a specific `type` keyword
 #[rule_processor_logger::log_processing]
-pub(crate) fn remove_extraneous_keys_keyword_type(schema: &mut Value) -> &mut Value {
+pub(crate) fn remove_extraneous_keys_keyword_type(schema: &mut Value) -> bool {
     let schema_object = if let Some(value) = schema.as_object_mut() {
         value
     } else {
-        return schema;
+        return false;
     };
 
     let primitive_types = get_primitive_types(schema_object.get("type"));
-    if !primitive_types.is_empty() {
+    if primitive_types.is_empty() {
+        false
+    } else {
         let mut keys_to_reserve = HashSet::<&'static str>::new();
         for primtive_type in &primitive_types {
             match primtive_type {
@@ -136,10 +137,10 @@ pub(crate) fn remove_extraneous_keys_keyword_type(schema: &mut Value) -> &mut Va
             }
         }
 
-        let _ = preserve_keys(schema_object, &keys_to_reserve);
-        let _ = replace::type_with(schema_object, &primitive_types);
+        let removed_keys = preserve_keys(schema_object, &keys_to_reserve);
+
+        replace::type_with(schema_object, &primitive_types) || removed_keys
     }
-    schema
 }
 
 #[cfg(test)]
@@ -268,7 +269,7 @@ mod tests {
     #[test_case(json!({"type": ["number", "integer"], "minLength": 1}) => json!({"type": "number"}))]
     fn test_keywords_elided_with_with_correct_order(mut schema: Value) -> Value {
         crate::init_logger();
-        update_schema(&mut schema);
+        let _ = update_schema(&mut schema);
         schema
     }
 }

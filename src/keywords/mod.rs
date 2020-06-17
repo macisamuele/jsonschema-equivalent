@@ -13,7 +13,7 @@ use serde_json::Value;
 /// NOTE: The order might be important for the capability/quality of the
 /// library so please be mindfull before modifying the order (and if you
 /// do so please motivate it in the pull request description)
-static UPDATE_SCHEMA_METHODS: &[fn(&mut Value) -> &mut Value] = &[
+static UPDATE_SCHEMA_METHODS: &[fn(&mut Value) -> bool] = &[
     min_max::update_min_max_related_keywords,
     type_::optimise_keyword_type,
     type_::remove_extraneous_keys_keyword_type,
@@ -22,20 +22,25 @@ static UPDATE_SCHEMA_METHODS: &[fn(&mut Value) -> &mut Value] = &[
 ];
 
 /// Perform the schema optimisaton without descending the schema
-fn update_schema_no_recursive(schema: &mut Value) {
-    let mut result_schema = schema;
+fn update_schema_no_recursive(schema: &mut Value) -> bool {
+    let mut updated_schema = false;
     for method in UPDATE_SCHEMA_METHODS {
-        result_schema = method(result_schema);
-        if let Value::Bool(_) = result_schema {
+        if method(schema) {
+            updated_schema = true;
+        }
+        if &Value::Bool(true) == schema {
             // If the schema is a `true` or `false` schema
             // we know that we cannot optimise it even more
-            return;
+            return true;
         }
     }
+    updated_schema
 }
 
 /// Discend the schema and optimise it.
-pub(crate) fn update_schema(schema: &mut Value) {
+/// Return true if schema modifications have been performed
+pub(crate) fn update_schema(schema: &mut Value) -> bool {
+    let mut updated_schema = false;
     if let Value::Object(schema_object) = schema {
         for (key, subschema) in schema_object {
             if KEYWORDS_WITH_SUBSCHEMAS.contains(&key.as_ref()) {
@@ -44,13 +49,13 @@ pub(crate) fn update_schema(schema: &mut Value) {
                         if KEYWORDS_WITH_DIRECT_SUBSCHEMAS.contains(&key.as_ref()) {
                             // In case of schemas where the keyword value MUST be a valid JSON Schema
                             // ie. `{"additionalProperties": {"type": "string"}}`
-                            update_schema(subschema);
+                            updated_schema |= update_schema(subschema);
                         } else {
                             // In case of schemas where the keyword holds a JSON Object and its
                             // values MUST be a valid JSON Schema
                             // ie. `{"properties": {"property" {"type": "string"}}}`
                             for subschema_value in subschema_object.values_mut() {
-                                update_schema(subschema_value);
+                                updated_schema |= update_schema(subschema_value);
                             }
                         }
                     }
@@ -59,17 +64,18 @@ pub(crate) fn update_schema(schema: &mut Value) {
                         // values MUST be a valid JSON Schema
                         // ie. `{"allOf": [{"type": "string"}]}`
                         for subschema_value in subschema_array {
-                            update_schema(subschema_value);
+                            updated_schema |= update_schema(subschema_value);
                         }
                     }
                     _ => {}
                 }
-                update_schema(subschema);
+                updated_schema |= update_schema(subschema);
             }
         }
 
-        update_schema_no_recursive(schema)
+        updated_schema |= update_schema_no_recursive(schema);
     }
+    updated_schema
 }
 
 #[cfg(test)]
@@ -83,7 +89,7 @@ mod tests {
     #[test_case(json!({"properties": {"prop": {"type": "string", "minimum": 1}}}) => json!({"properties": {"prop": {"type": "string"}}}))]
     #[test_case(json!({"allOf": [{"type": "string", "minimum": 1}]}) => json!({"allOf": [{"type": "string"}]}))]
     fn test_update_schema_descend_schema(mut schema: Value) -> Value {
-        update_schema(&mut schema);
+        let _ = update_schema(&mut schema);
         schema
     }
 }
