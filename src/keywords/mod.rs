@@ -1,7 +1,7 @@
 //! The reference of the JSON Schema specifications are available on
 //! <https://tools.ietf.org/html/draft-handrews-json-schema-validation-01>
 mod additional_properties;
-mod min_max;
+mod macro_;
 mod required;
 mod type_;
 
@@ -14,7 +14,7 @@ use serde_json::Value;
 /// library so please be mindfull before modifying the order (and if you
 /// do so please motivate it in the pull request description)
 static UPDATE_SCHEMA_METHODS: &[fn(&mut Value) -> bool] = &[
-    min_max::update_min_max_related_keywords,
+    macro_::maximum_minimum_related_keywords::update_min_max_related_keywords,
     type_::optimise_keyword_type,
     type_::remove_extraneous_keys_keyword_type,
     additional_properties::remove_empty_additional_properties,
