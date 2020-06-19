@@ -55,10 +55,28 @@ impl ToString for PrimitiveType {
         }
     }
 }
+impl PrimitiveType {
+    #[allow(dead_code)]
+    pub(crate) fn from_serde_value(value: &Value) -> Self {
+        match value {
+            Value::Array(_) => Self::Array,
+            Value::Bool(_) => Self::Boolean,
+            Value::Null => Self::Null,
+            // In order to make the tool less binded to Draft versions
+            // we're not trying (at least yet) to detect the correct
+            // numeric type. This because `1.0` is not a valid `integer`
+            // for Draft4 but it is for Draft7
+            Value::Number(_) => Self::Number,
+            Value::Object(_) => Self::Object,
+            Value::String(_) => Self::String,
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
     use super::PrimitiveType;
+    use serde_json::{json, Value};
     use std::convert::TryFrom;
     use test_case::test_case;
 
@@ -72,5 +90,15 @@ mod tests {
     #[test_case("something" => Err(r#""something" is not a recognized primitive type"#.to_string()))]
     fn test_from_str_to_primitive_type(value: &str) -> Result<PrimitiveType, String> {
         PrimitiveType::try_from(value)
+    }
+
+    #[test_case(&json!([]) => PrimitiveType::Array)]
+    #[test_case(&json!(true) => PrimitiveType::Boolean)]
+    #[test_case(&json!(null) => PrimitiveType::Null)]
+    #[test_case(&json!(1) => PrimitiveType::Number)]
+    #[test_case(&json!({}) => PrimitiveType::Object)]
+    #[test_case(&json!("") => PrimitiveType::String)]
+    fn test_from_serde_value(value: &Value) -> PrimitiveType {
+        PrimitiveType::from_serde_value(value)
     }
 }
