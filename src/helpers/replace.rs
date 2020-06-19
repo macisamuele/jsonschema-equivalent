@@ -12,8 +12,13 @@ use std::mem::replace;
 /// Using `std::mem::replace` ensures that the value stored in `schema` is dropped
 /// once leaving the scope of the method
 #[inline]
-pub(crate) fn with_false_schema(schema: &mut Value) {
-    let _ = replace(schema, Value::Bool(false));
+pub(crate) fn with_false_schema(schema: &mut Value) -> bool {
+    if schema == &Value::Bool(false) {
+        false
+    } else {
+        let _ = replace(schema, Value::Bool(false));
+        true
+    }
 }
 
 /// Replace the `schema` with `true`.
@@ -25,8 +30,13 @@ pub(crate) fn with_false_schema(schema: &mut Value) {
 /// once leaving the scope of the method
 #[allow(dead_code)]
 #[inline]
-pub(crate) fn with_true_schema(schema: &mut Value) {
-    let _ = replace(schema, Value::Bool(true));
+pub(crate) fn with_true_schema(schema: &mut Value) -> bool {
+    if schema == &Value::Bool(true) {
+        false
+    } else {
+        let _ = replace(schema, Value::Bool(true));
+        true
+    }
 }
 
 /// Replace/Define the `type` keyword into the `schema`
@@ -70,17 +80,21 @@ mod tests {
 
     #[test_case(json!({}))]
     #[test_case(json!(null))]
+    #[test_case(json!(false))]
     #[test_case(json!(true))]
     fn test_with_false_schema(mut schema: Value) {
-        with_false_schema(&mut schema);
+        let was_a_false_schema = schema == Value::Bool(false);
+        assert_eq!(with_false_schema(&mut schema), !was_a_false_schema);
         assert_eq!(schema, Value::Bool(false));
     }
 
     #[test_case(json!({}))]
     #[test_case(json!(null))]
+    #[test_case(json!(false))]
     #[test_case(json!(true))]
     fn test_with_true_schema(mut schema: Value) {
-        with_true_schema(&mut schema);
+        let was_simplest_true_schema = schema == Value::Bool(true);
+        assert_eq!(with_true_schema(&mut schema), !was_simplest_true_schema);
         assert_eq!(schema, Value::Bool(true));
     }
 

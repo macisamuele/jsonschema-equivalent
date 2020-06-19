@@ -15,8 +15,7 @@ fn cleanup_incongruent_keywords(
     keywords_to_remove: &[&str],
 ) -> bool {
     if should_replace_with_false_schema(schema_primitive_types) {
-        replace::with_false_schema(schema);
-        true
+        replace::with_false_schema(schema)
     } else {
         let final_primitive_types = evaluate_final_primitive_types(schema_primitive_types);
         if let Value::Object(schema_object) = schema {

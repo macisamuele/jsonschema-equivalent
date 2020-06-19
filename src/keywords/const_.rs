@@ -38,8 +38,7 @@ pub(crate) fn simple_const_cleanup(schema: &mut Value) -> bool {
             let _ = final_primitive_types.insert(PrimitiveType::Integer);
             replace::type_with(schema_object, &final_primitive_types)
         } else {
-            replace::with_false_schema(schema);
-            true
+            replace::with_false_schema(schema)
         }
     } else {
         false

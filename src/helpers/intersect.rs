@@ -52,7 +52,7 @@ pub(crate) fn intersection_schema<'s>(
         Value::Object(map) => map,
         Value::Bool(false) => {
             // if `other_schema` is a `false` schema then regrdless of `schema` all the values will be invalid. So the resulting schema is a `false` schema
-            replace::with_false_schema(schema);
+            let _ = replace::with_false_schema(schema);
             return IntersectStatus::Complete { schema };
         }
         _ => {
@@ -97,7 +97,7 @@ pub(crate) fn intersection_schema<'s>(
                         }
                         "const" | "contentEncoding" | "contentMediaType" | "format" => {
                             if schema_value != other_value {
-                                replace::with_false_schema(schema);
+                                let _ = replace::with_false_schema(schema);
                                 return IntersectStatus::Complete { schema };
                             }
                         }
@@ -110,7 +110,7 @@ pub(crate) fn intersection_schema<'s>(
                             {
                                 common_values_and_deduplicate(schema_items, other_items);
                                 if schema_items.is_empty() {
-                                    replace::with_false_schema(schema);
+                                    let _ = replace::with_false_schema(schema);
                                     return IntersectStatus::Complete { schema };
                                 }
                             };
@@ -186,7 +186,7 @@ pub(crate) fn intersection_schema<'s>(
                                 && (!replace::type_with(schema_object, &final_primiive_types)
                                     || schema_object.get("type") == None)
                             {
-                                replace::with_false_schema(schema);
+                                let _ = replace::with_false_schema(schema);
                                 return IntersectStatus::Complete { schema };
                             }
                         }

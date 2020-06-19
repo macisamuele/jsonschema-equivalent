@@ -46,8 +46,9 @@ pub(crate) fn optimise_property_names(schema: &mut Value) -> bool {
             if replace::type_with(schema_object, &schema_primitive_types) {
                 if schema_object.get("type") == None {
                     // If the only supported type was object then the schema is just a `false` schema
-                    replace::with_false_schema(schema);
+                    let _ = replace::with_false_schema(schema);
                 }
+                // We were able to modify the schema on `replace::type_with`
                 true
             } else {
                 false
