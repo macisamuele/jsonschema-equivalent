@@ -30,9 +30,9 @@
 | `{"minimum": 1, "type": "string"}` | `{"type": "string"}` | `minimum` keyword has no effect on schema with `type` string |
 | `{"type": ["number", "integer"]}` | `{"type": "number"}` | `type` keyword containing `number` and `integer` is as effective as only containing number |
 | `{"minItems": 3, "minLength": 1, "minimum": 2, "type": ["number", "string"]}` | `{"minLength": 1, "minimum": 2, "type": ["number", "string"]}` | `minItems` keyword has no effect on schema with `type` string or number |
-| `{"additionalProperties": true}` | `{}` | `additionalProperties` keyword has no effect on `true` schema |
-| `{"additionalProperties": {}}` | `{}` | `additionalProperties` keyword has no effect on empty schema |
-| `{"required": []}` | `{}` | `required` keyword has no effect on empty list |
+| `{"additionalProperties": true}` | `true` | `additionalProperties` keyword has no effect on `true` schema |
+| `{"additionalProperties": {}}` | `true` | `additionalProperties` keyword has no effect on empty schema |
+| `{"required": []}` | `true` | `required` keyword has no effect on empty list |
 | `{"exclusiveMaximum": 1, "exclusiveMinimum": 2, "type": "number"}` | `false` | `exclusiveMaximum` keyword lower than `exclusiveMinimum` keyword results into a `false` schema |
 | `{"maxItems": 1, "minItems": 2, "type": "array"}` | `false` | `maxItems` keyword lower than `minItems` keyword results into a `false` schema |
 | `{"maxLength": 1, "minLength": 2, "type": "string"}` | `false` | `maxLength` keyword lower than `minLength` keyword results into a `false` schema |

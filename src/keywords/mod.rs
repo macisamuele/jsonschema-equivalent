@@ -8,7 +8,10 @@ mod property_names;
 mod required;
 mod type_;
 
-use crate::constants::{KEYWORDS_WITH_DIRECT_SUBSCHEMAS, KEYWORDS_WITH_SUBSCHEMAS};
+use crate::{
+    constants::{KEYWORDS_WITH_DIRECT_SUBSCHEMAS, KEYWORDS_WITH_SUBSCHEMAS},
+    helpers::{is, replace},
+};
 use serde_json::Value;
 
 /// Order of the methods used to update the schema
@@ -47,7 +50,9 @@ fn update_schema_no_recursive(schema: &mut Value) -> bool {
 /// Return true if schema modifications have been performed
 pub(crate) fn update_schema(schema: &mut Value) -> bool {
     let mut updated_schema = false;
-    if let Value::Object(schema_object) = schema {
+    if is::true_schema(schema) {
+        return replace::with_true_schema(schema);
+    } else if let Value::Object(schema_object) = schema {
         for (key, subschema) in schema_object {
             if KEYWORDS_WITH_SUBSCHEMAS.contains(&key.as_ref()) {
                 match subschema {
@@ -91,7 +96,7 @@ mod tests {
 
     use test_case::test_case;
 
-    #[test_case(json!({}) => json!({}))]
+    #[test_case(json!({}) => json!(true))]
     #[test_case(json!({"properties": {"prop": {"type": "string", "minimum": 1}}}) => json!({"properties": {"prop": {"type": "string"}}}))]
     #[test_case(json!({"allOf": [{"type": "string", "minimum": 1}]}) => json!({"allOf": [{"type": "string"}]}))]
     fn test_update_schema_descend_schema(mut schema: Value) -> Value {
