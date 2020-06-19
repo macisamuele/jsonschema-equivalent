@@ -1,5 +1,5 @@
 use crate::{
-    helpers::{replace, types::get_primitive_types},
+    helpers::{replace, types::PrimitiveTypesBitMap},
     primitive_type::PrimitiveType,
 };
 use serde_json::Value;
@@ -17,9 +17,8 @@ pub(crate) fn simple_enum_cleanup(schema: &mut Value) -> bool {
         return false;
     };
 
-    let schema_primitive_types = if let Some(value) = schema_object.get("type") {
-        get_primitive_types(Some(value))
-    } else {
+    let schema_primitive_types = PrimitiveTypesBitMap::from_schema_value(schema_object.get("type"));
+    if schema_primitive_types.is_empty() {
         return false;
     };
 
@@ -33,11 +32,11 @@ pub(crate) fn simple_enum_cleanup(schema: &mut Value) -> bool {
                 .enumerate()
                 .filter_map(|(index, enum_value)| {
                     let enum_value_primitive_type = PrimitiveType::from_serde_value(enum_value);
-                    if schema_primitive_types.contains(&enum_value_primitive_type)
+                    if schema_primitive_types.contains(enum_value_primitive_type)
                         || (
                             // This additional case is needed because `PrimitiveType::from_serde_value` does not report `PrimitiveType::Integer`. Check the method doc for more info
                             enum_value_primitive_type == PrimitiveType::Number
-                                && schema_primitive_types.contains(&PrimitiveType::Integer)
+                                && schema_primitive_types.contains(PrimitiveType::Integer)
                         )
                     {
                         None

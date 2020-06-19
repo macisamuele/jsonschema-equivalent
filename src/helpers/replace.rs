@@ -1,7 +1,7 @@
-use crate::helpers::types::{get_primitive_types, to_json_schema_primitive_types};
-use crate::primitive_type::PrimitiveType;
+use crate::helpers::types::PrimitiveTypesBitMap;
+
 use serde_json::{map::Entry, Map, Value};
-use std::collections::BTreeSet;
+
 use std::mem::replace;
 
 /// Replace the `schema` with `false`.
@@ -47,11 +47,11 @@ pub(crate) fn with_true_schema(schema: &mut Value) -> bool {
 #[inline]
 pub(crate) fn type_with(
     schema_object: &mut Map<String, Value>,
-    primitive_types: &BTreeSet<PrimitiveType>,
+    primitive_types: PrimitiveTypesBitMap,
 ) -> bool {
     match schema_object.entry("type") {
         Entry::Vacant(entry) => {
-            if let Some(json_primitive_types) = to_json_schema_primitive_types(primitive_types) {
+            if let Some(json_primitive_types) = primitive_types.to_schema_value() {
                 let _ = entry.insert(json_primitive_types);
                 true
             } else {
@@ -59,9 +59,9 @@ pub(crate) fn type_with(
             }
         }
         Entry::Occupied(mut entry) => {
-            if let Some(json_primitive_types) = to_json_schema_primitive_types(primitive_types) {
+            if let Some(json_primitive_types) = primitive_types.to_schema_value() {
                 let previous_value = entry.insert(json_primitive_types);
-                primitive_types != &get_primitive_types(Some(&previous_value))
+                primitive_types != PrimitiveTypesBitMap::from_schema_value(Some(&previous_value))
             } else {
                 let _ = entry.remove();
                 true
@@ -73,10 +73,21 @@ pub(crate) fn type_with(
 #[cfg(test)]
 mod tests {
     use super::{type_with, with_false_schema, with_true_schema};
+    use crate::helpers::types::PrimitiveTypesBitMap;
     use crate::primitive_type::PrimitiveType;
     use serde_json::{json, Value};
-    use std::collections::BTreeSet;
+
     use test_case::test_case;
+
+    macro_rules! bit_map {
+        ($($pt: expr),* $(,)*) => {{
+            let mut primitive_type_bit_map: PrimitiveTypesBitMap = PrimitiveTypesBitMap::default();
+            $(
+                primitive_type_bit_map |= $pt;
+            )*
+            primitive_type_bit_map
+        }};
+    }
 
     #[test_case(json!({}))]
     #[test_case(json!(null))]
@@ -98,18 +109,18 @@ mod tests {
         assert_eq!(schema, Value::Bool(true));
     }
 
-    #[test_case(json!({}), &btree_set!(PrimitiveType::Boolean), true => json!({"type": "boolean"}))]
-    #[test_case(json!({"type": "null"}), &btree_set!(PrimitiveType::Null), false => json!({"type": "null"}))]
-    #[test_case(json!({"type": "object"}), &btree_set!(PrimitiveType::Null, PrimitiveType::Object), true => json!({"type": ["null", "object"]}))]
-    #[test_case(json!({"type": ["string", "object"]}), &btree_set!(PrimitiveType::Object, PrimitiveType::String), false => json!({"type": ["object", "string"]}))]
-    #[test_case(json!({"type": "number"}), &btree_set!(PrimitiveType::Integer), true => json!({"type": "integer"}))]
+    #[test_case(json!({}), bit_map!(PrimitiveType::Boolean), true => json!({"type": "boolean"}))]
+    #[test_case(json!({"type": "null"}), bit_map!(PrimitiveType::Null), false => json!({"type": "null"}))]
+    #[test_case(json!({"type": "object"}), bit_map!(PrimitiveType::Null, PrimitiveType::Object), true => json!({"type": ["null", "object"]}))]
+    #[test_case(json!({"type": ["string", "object"]}), bit_map!(PrimitiveType::Object, PrimitiveType::String), false => json!({"type": ["object", "string"]}))]
+    #[test_case(json!({"type": "number"}), bit_map!(PrimitiveType::Integer), true => json!({"type": "integer"}))]
     // All primitive types case
-    #[test_case(json!({}), &btree_set!(PrimitiveType::Array, PrimitiveType::Boolean, PrimitiveType::Integer, PrimitiveType::Null, PrimitiveType::Number, PrimitiveType::Object, PrimitiveType::String), false => json!({}))]
-    #[test_case(json!({}), &btree_set!(PrimitiveType::Array, PrimitiveType::Boolean, PrimitiveType::Null, PrimitiveType::Number, PrimitiveType::Object, PrimitiveType::String), false => json!({}))]
-    #[test_case(json!({"type": "string"}), &btree_set!(PrimitiveType::Array, PrimitiveType::Boolean, PrimitiveType::Null, PrimitiveType::Number, PrimitiveType::Object, PrimitiveType::String), true => json!({}))]
+    #[test_case(json!({}), bit_map!(PrimitiveType::Array, PrimitiveType::Boolean, PrimitiveType::Integer, PrimitiveType::Null, PrimitiveType::Number, PrimitiveType::Object, PrimitiveType::String), false => json!({}))]
+    #[test_case(json!({}), bit_map!(PrimitiveType::Array, PrimitiveType::Boolean, PrimitiveType::Null, PrimitiveType::Number, PrimitiveType::Object, PrimitiveType::String), false => json!({}))]
+    #[test_case(json!({"type": "string"}), bit_map!(PrimitiveType::Array, PrimitiveType::Boolean, PrimitiveType::Null, PrimitiveType::Number, PrimitiveType::Object, PrimitiveType::String), true => json!({}))]
     fn test_type_with(
         mut schema: Value,
-        primitive_types: &BTreeSet<PrimitiveType>,
+        primitive_types: PrimitiveTypesBitMap,
         is_modified: bool,
     ) -> Value {
         assert_eq!(

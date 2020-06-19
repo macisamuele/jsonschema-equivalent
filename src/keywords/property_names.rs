@@ -1,4 +1,4 @@
-use crate::helpers::{is, replace, types::get_primitive_types};
+use crate::helpers::{is, replace, types::PrimitiveTypesBitMap};
 use crate::primitive_type::PrimitiveType;
 use serde_json::Value;
 
@@ -18,7 +18,8 @@ pub(crate) fn optimise_property_names(schema: &mut Value) -> bool {
     } else {
         return false;
     };
-    let mut schema_primitive_types = get_primitive_types(schema_object.get("type"));
+    let mut schema_primitive_types =
+        PrimitiveTypesBitMap::from_schema_value(schema_object.get("type"));
     let schema_min_properties = schema_object
         .get("minProperties")
         .map_or(0.0, |value| value.as_f64().unwrap_or(0.0));
@@ -33,36 +34,48 @@ pub(crate) fn optimise_property_names(schema: &mut Value) -> bool {
         return true;
     }
 
-    if schema_primitive_types.contains(&PrimitiveType::Object) {
-        let property_names_types = get_primitive_types(property_names_schema.get("type"));
-        if schema_min_properties > 0.0
-            && (
-                // and we know that any possible property won't be valid against `propertyNames` schema
-                is::false_schema(property_names_schema)
-                    || !property_names_types.contains(&PrimitiveType::String)
-            )
-        {
-            let _ = schema_primitive_types.remove(&PrimitiveType::Object);
-            if replace::type_with(schema_object, &schema_primitive_types) {
-                if schema_object.get("type") == None {
-                    // If the only supported type was object then the schema is just a `false` schema
-                    let _ = replace::with_false_schema(schema);
+    let mut updated_schema = false;
+    let property_names_types = PrimitiveTypesBitMap::from_schema(property_names_schema);
+    if property_names_types.contains(PrimitiveType::String)
+        && property_names_types.has_other_primitive_types_other_than(PrimitiveType::String)
+    {
+        // We know that `propertyNames` is an object as we have types in the bitmap.
+        // A `false` schema does not have types in the bitmap
+        if let Value::Object(property_names_schema_object) = property_names_schema {
+            updated_schema |= replace::type_with(
+                property_names_schema_object,
+                PrimitiveTypesBitMap::from_primitive_type(PrimitiveType::String),
+            );
+        }
+    }
+
+    updated_schema |= if schema_primitive_types.contains(PrimitiveType::Object) {
+        if !property_names_types.contains(PrimitiveType::String) {
+            // No properties can be accepted, so we need to decide if we can still consider JSON Object as valid type or not
+            // The determination relies on the requirement of having at least one property to consider the schema valid
+            // If one property is required then we cannot accept `type=object`, otherwise we need to restrict the maximum
+            // number of properties to 0 (so only empty objects can be passed in)
+
+            if schema_min_properties > 0.0 {
+                schema_primitive_types.remove(PrimitiveType::Object);
+                if replace::type_with(schema_object, schema_primitive_types) {
+                    if schema_object.get("type") == None {
+                        // If the only supported type was object then the schema is just a `false` schema
+                        let _ = replace::with_false_schema(schema);
+                    }
+                    // We were able to modify the schema on `replace::type_with`
+                    true
+                } else {
+                    false
                 }
-                // We were able to modify the schema on `replace::type_with`
-                true
             } else {
-                false
-            }
-        } else if property_names_types.len() == 1 {
-            if !property_names_types.contains(&PrimitiveType::String) {
-                // No properties can be accepted, so we can simplify the schema by still accepting `type` object but ensuring
-                // that no properties can be defined
                 let _ = schema_object.insert("maxProperties".to_string(), Value::from(0));
                 let _ = schema_object.remove("propertyNames");
                 true
-            } else if property_names_schema
-                .as_object()
-                .map_or(false, |value| value.len() == 1)
+            }
+        } else if let Value::Object(property_names_schema_object) = property_names_schema {
+            if property_names_schema_object.len() == 1
+                && property_names_schema_object.contains_key("type")
             {
                 // `propertyNames` schema is equivalent to `{"type": "string"}`. We know that because `type` keyword must be defined in order
                 // to have only one primitive type (if not defined all the primitive types would be present) and the schema has only 1 property
@@ -71,29 +84,22 @@ pub(crate) fn optimise_property_names(schema: &mut Value) -> bool {
                 let _ = schema_object.remove("propertyNames");
                 true
             } else {
-                false
+                replace::type_with(
+                    property_names_schema_object,
+                    PrimitiveTypesBitMap::from_primitive_type(PrimitiveType::String),
+                )
             }
         } else {
-            if property_names_types.contains(&PrimitiveType::String) {
-                // More than a type is supported in `propertyNames` schema and one is String. They only string is supported
-                if let Value::Object(property_names_schema_object) = property_names_schema {
-                    let _ = property_names_schema_object.insert(
-                        "type".to_string(),
-                        Value::String(PrimitiveType::String.to_string()),
-                    );
-                }
-            } else {
-                // No properties can be accepted, so we can simplify the schema by still accepting `type` object but ensuring
-                // that no properties can be defined
-                let _ = schema_object.insert("maxProperties".to_string(), Value::from(0));
-                let _ = schema_object.remove("propertyNames");
-            }
-            true
+            // This is impossible because we know that type string is included, so (1) it cannot be a false schema,
+            // (2) it cannot be a true schema as it has been checked around the begin of the method
+            false
         }
     } else {
         let _ = schema_object.remove("propertyNames");
         true
-    }
+    };
+
+    updated_schema
 }
 
 #[cfg(test)]

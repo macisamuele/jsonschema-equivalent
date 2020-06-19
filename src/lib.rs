@@ -57,21 +57,6 @@
     variant_size_differences
 )]
 
-// Testing macro defined before any `mod`ule import in order to provide macro access
-#[cfg(test)]
-macro_rules! hash_set {
-    ($($elem: expr),* $(,)*) => {
-        vec![$($elem),*].iter().cloned().collect::<HashSet<_>>()
-    };
-}
-
-#[cfg(test)]
-macro_rules! btree_set {
-    ($($elem: expr),* $(,)*) => {
-        vec![$($elem),*].iter().cloned().collect::<BTreeSet<_>>()
-    };
-}
-
 pub(crate) mod constants;
 pub(crate) mod helpers;
 mod keywords;

@@ -1,7 +1,6 @@
 use crate::helpers::{
-    common_values_and_deduplicate, join_and_deduplicate, replace, types::get_primitive_types,
+    common_values_and_deduplicate, join_and_deduplicate, replace, types::PrimitiveTypesBitMap,
 };
-use crate::primitive_type::PrimitiveType;
 use serde_json::{map::Entry, Value};
 use std::ops::Deref;
 use std::ops::DerefMut;
@@ -168,22 +167,16 @@ pub(crate) fn intersection_schema<'s>(
                             };
                         }
                         "type" => {
-                            let mut schema_primitive_types =
-                                get_primitive_types(Some(schema_value));
-                            if schema_primitive_types.contains(&PrimitiveType::Number) {
-                                let _ = schema_primitive_types.insert(PrimitiveType::Integer);
-                            }
-                            let mut other_primitive_types = get_primitive_types(Some(other_value));
-                            if other_primitive_types.contains(&PrimitiveType::Number) {
-                                let _ = other_primitive_types.insert(PrimitiveType::Integer);
-                            }
+                            let schema_primitive_types =
+                                PrimitiveTypesBitMap::from_schema_value(schema_object.get("type"));
+                            let other_primitive_types = PrimitiveTypesBitMap::from_schema_value(
+                                other_schema_object.get("type"),
+                            );
 
-                            let final_primiive_types = schema_primitive_types
-                                .intersection(&other_primitive_types)
-                                .cloned()
-                                .collect();
+                            let final_primiive_types =
+                                schema_primitive_types & other_primitive_types;
                             if schema_primitive_types != final_primiive_types
-                                && (!replace::type_with(schema_object, &final_primiive_types)
+                                && (!replace::type_with(schema_object, final_primiive_types)
                                     || schema_object.get("type") == None)
                             {
                                 let _ = replace::with_false_schema(schema);

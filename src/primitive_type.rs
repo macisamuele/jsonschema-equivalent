@@ -31,6 +31,7 @@ impl TryFrom<&str> for PrimitiveType {
         }
     }
 }
+
 impl TryFrom<&Value> for PrimitiveType {
     type Error = String;
 
@@ -71,6 +72,58 @@ impl PrimitiveType {
             Value::String(_) => Self::String,
         }
     }
+
+    /// Utility method to convert a `PrimitiveType` into a bit representation.
+    ///
+    /// NOTE: This method does not keeps into account the fact that an Integer is actually a Number as well
+    #[inline]
+    fn to_bit_representation_internal(self) -> u8 {
+        match self {
+            Self::Array => 1,
+            Self::Boolean => 2,
+            Self::Integer => 4,
+            Self::Null => 8,
+            Self::Number => 16,
+            Self::Object => 32,
+            Self::String => 64,
+        }
+    }
+
+    /// Utility method to convert a `PrimitiveType` into a bit representation
+    ///
+    /// NOTE: This method keeps into account the fact that an Integer is actually a Number as well
+    #[inline]
+    pub(crate) fn to_bit_representation(self) -> u8 {
+        if self == PrimitiveType::Number {
+            PrimitiveType::Integer.to_bit_representation_internal()
+                | PrimitiveType::Number.to_bit_representation_internal()
+        } else {
+            self.to_bit_representation_internal()
+        }
+    }
+
+    /// Utility method to convert a `PrimitiveType` into a bit representation
+    pub(crate) fn from_bit_representation(
+        primitive_type_bit_representation: u8,
+    ) -> Vec<PrimitiveType> {
+        let mut result = Vec::with_capacity(7);
+        for primitive_type in &[
+            PrimitiveType::Array,
+            PrimitiveType::Boolean,
+            PrimitiveType::Integer,
+            PrimitiveType::Null,
+            PrimitiveType::Number,
+            PrimitiveType::Object,
+            PrimitiveType::String,
+        ] {
+            if primitive_type_bit_representation & primitive_type.to_bit_representation_internal()
+                != 0
+            {
+                result.push(*primitive_type);
+            }
+        }
+        result
+    }
 }
 
 #[cfg(test)]
@@ -100,5 +153,23 @@ mod tests {
     #[test_case(&json!("") => PrimitiveType::String)]
     fn test_from_serde_value(value: &Value) -> PrimitiveType {
         PrimitiveType::from_serde_value(value)
+    }
+
+    #[test_case(PrimitiveType::Array => vec![PrimitiveType::Array])]
+    #[test_case(PrimitiveType::Boolean => vec![PrimitiveType::Boolean])]
+    #[test_case(PrimitiveType::Integer => vec![PrimitiveType::Integer])]
+    #[test_case(PrimitiveType::Null => vec![PrimitiveType::Null])]
+    #[test_case(PrimitiveType::Number => vec![PrimitiveType::Integer, PrimitiveType::Number])]
+    #[test_case(PrimitiveType::Object => vec![PrimitiveType::Object])]
+    #[test_case(PrimitiveType::String => vec![PrimitiveType::String])]
+    fn test_bit_representation_round_trip(primitive_type: PrimitiveType) -> Vec<PrimitiveType> {
+        PrimitiveType::from_bit_representation(primitive_type.to_bit_representation())
+    }
+
+    #[test_case(PrimitiveType::Array.to_bit_representation() | PrimitiveType::String.to_bit_representation() => vec![PrimitiveType::Array, PrimitiveType::String])]
+    #[test_case(PrimitiveType::Array.to_bit_representation() | PrimitiveType::Integer.to_bit_representation() => vec![PrimitiveType::Array, PrimitiveType::Integer])]
+    #[test_case(PrimitiveType::Array.to_bit_representation() | PrimitiveType::Number.to_bit_representation() => vec![PrimitiveType::Array, PrimitiveType::Integer, PrimitiveType::Number])]
+    fn test_from_bit_representation(bit_representation: u8) -> Vec<PrimitiveType> {
+        PrimitiveType::from_bit_representation(bit_representation)
     }
 }

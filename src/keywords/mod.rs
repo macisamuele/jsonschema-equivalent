@@ -20,7 +20,7 @@ use serde_json::Value;
 /// library so please be mindfull before modifying the order (and if you
 /// do so please motivate it in the pull request description)
 static UPDATE_SCHEMA_METHODS: &[fn(&mut Value) -> bool] = &[
-    macro_::maximum_minimum_related_keywords::update_min_max_related_keywords,
+    macro_::maximum_minimum_related_keywords::update_max_min_related_keywords,
     const_::simple_const_cleanup,
     enum_::simple_enum_cleanup,
     property_names::optimise_property_names,
@@ -100,6 +100,7 @@ mod tests {
     #[test_case(json!({"properties": {"prop": {"type": "string", "minimum": 1}}}) => json!({"properties": {"prop": {"type": "string"}}}))]
     #[test_case(json!({"allOf": [{"type": "string", "minimum": 1}]}) => json!({"allOf": [{"type": "string"}]}))]
     fn test_update_schema_descend_schema(mut schema: Value) -> Value {
+        crate::init_logger();
         let _ = update_schema(&mut schema);
         schema
     }

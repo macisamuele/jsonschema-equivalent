@@ -96,6 +96,12 @@ mod tests {
     use std::collections::HashSet;
     use test_case::test_case;
 
+    macro_rules! hash_set {
+        ($($elem: expr),* $(,)*) => {
+            vec![$($elem),*].iter().cloned().collect::<HashSet<_>>()
+        };
+    }
+
     #[test]
     fn test_keywords_to_remove_remove_not_existing_keyword() {
         assert_eq!(

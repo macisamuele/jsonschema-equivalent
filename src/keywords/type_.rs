@@ -1,5 +1,5 @@
 use crate::{
-    helpers::{preserve_keys, replace, types::get_primitive_types},
+    helpers::{preserve_keys, replace, types::PrimitiveTypesBitMap},
     primitive_type::PrimitiveType,
 };
 use serde_json::Value;
@@ -92,7 +92,7 @@ pub(crate) fn optimise_keyword_type(schema: &mut Value) -> bool {
 
     replace::type_with(
         schema_object,
-        &get_primitive_types(schema_object.get("type")),
+        PrimitiveTypesBitMap::from_schema_value(schema_object.get("type")),
     )
 }
 
@@ -106,40 +106,36 @@ pub(crate) fn remove_extraneous_keys_keyword_type(schema: &mut Value) -> bool {
         return false;
     };
 
-    let primitive_types = get_primitive_types(schema_object.get("type"));
+    let primitive_types = PrimitiveTypesBitMap::from_schema_value(schema_object.get("type"));
     if primitive_types.is_empty() {
         false
     } else {
-        let mut keys_to_reserve = HashSet::<&'static str>::new();
-        for primtive_type in &primitive_types {
-            match primtive_type {
-                PrimitiveType::Array => KEYWORDS_TYPE_ARRAY.iter().for_each(|key| {
-                    let _ = keys_to_reserve.insert(key);
-                }),
-                PrimitiveType::Boolean => KEYWORDS_TYPE_BOOLEAN.iter().for_each(|key| {
-                    let _ = keys_to_reserve.insert(key);
-                }),
-                PrimitiveType::Integer => KEYWORDS_TYPE_INTEGER.iter().for_each(|key| {
-                    let _ = keys_to_reserve.insert(key);
-                }),
-                PrimitiveType::Null => KEYWORDS_TYPE_NULL.iter().for_each(|key| {
-                    let _ = keys_to_reserve.insert(key);
-                }),
-                PrimitiveType::Number => KEYWORDS_TYPE_NUMBER.iter().for_each(|key| {
-                    let _ = keys_to_reserve.insert(key);
-                }),
-                PrimitiveType::Object => KEYWORDS_TYPE_OBJECT.iter().for_each(|key| {
-                    let _ = keys_to_reserve.insert(key);
-                }),
-                PrimitiveType::String => KEYWORDS_TYPE_STRING.iter().for_each(|key| {
-                    let _ = keys_to_reserve.insert(key);
-                }),
-            }
+        let mut keys_to_reserve = HashSet::new();
+        if primitive_types.contains(PrimitiveType::Array) {
+            keys_to_reserve.extend(KEYWORDS_TYPE_ARRAY.iter());
+        }
+        if primitive_types.contains(PrimitiveType::Boolean) {
+            keys_to_reserve.extend(KEYWORDS_TYPE_BOOLEAN.iter());
+        }
+        if primitive_types.contains(PrimitiveType::Integer) {
+            keys_to_reserve.extend(KEYWORDS_TYPE_INTEGER.iter());
+        }
+        if primitive_types.contains(PrimitiveType::Null) {
+            keys_to_reserve.extend(KEYWORDS_TYPE_NULL.iter());
+        }
+        if primitive_types.contains(PrimitiveType::Number) {
+            keys_to_reserve.extend(KEYWORDS_TYPE_NUMBER.iter());
+        }
+        if primitive_types.contains(PrimitiveType::Object) {
+            keys_to_reserve.extend(KEYWORDS_TYPE_OBJECT.iter());
+        }
+        if primitive_types.contains(PrimitiveType::String) {
+            keys_to_reserve.extend(KEYWORDS_TYPE_STRING.iter());
         }
 
         let removed_keys = preserve_keys(schema_object, &keys_to_reserve);
 
-        replace::type_with(schema_object, &primitive_types) || removed_keys
+        replace::type_with(schema_object, primitive_types) || removed_keys
     }
 }
 
