@@ -1,6 +1,7 @@
 //! The reference of the JSON Schema specifications are available on
 //! <https://tools.ietf.org/html/draft-handrews-json-schema-validation-01>
 mod additional_properties;
+mod const_;
 mod macro_;
 mod property_names;
 mod required;
@@ -16,11 +17,12 @@ use serde_json::Value;
 /// do so please motivate it in the pull request description)
 static UPDATE_SCHEMA_METHODS: &[fn(&mut Value) -> bool] = &[
     macro_::maximum_minimum_related_keywords::update_min_max_related_keywords,
-    type_::optimise_keyword_type,
-    type_::remove_extraneous_keys_keyword_type,
+    const_::simple_const_cleanup,
     property_names::optimise_property_names,
     additional_properties::remove_empty_additional_properties,
     required::remove_empty_required,
+    type_::optimise_keyword_type,
+    type_::remove_extraneous_keys_keyword_type,
 ];
 
 /// Perform the schema optimisaton without descending the schema

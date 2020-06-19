@@ -42,4 +42,5 @@
 | `{"propertyNames": {"minLength": 1}, "type": "number"}` | `{"type": "number"}` | `propertyNames` adds no restriction if JSON objects are not allowed |
 | `{"propertyNames": {"minLength": 1, "minimum": 1}, "type": "object"}` | `{"propertyNames": {"minLength": 1, "type": "string"}, "type": "object"}` | `propertyNames` must be of `type` string, so all keywords extraneous for the `type` to that have no influence |
 | `{"minProperties": 1, "propertyNames": false, "type": ["number", "object"]}` | `{"type": "number"}` | `propertyNames` as `false` schema, with the requirement of a property defined in case of `type` object prevents a JSON object to ever be valid |
+| `{"const": "some-text", "type": "array"}` | `false` | Incongruent types between `const` value and defined type make the schema a `false` schema |
 <!-- TABLE END -->
