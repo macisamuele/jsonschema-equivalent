@@ -2,6 +2,7 @@
 //! <https://tools.ietf.org/html/draft-handrews-json-schema-validation-01>
 mod additional_properties;
 mod const_;
+mod enum_;
 mod macro_;
 mod property_names;
 mod required;
@@ -18,6 +19,7 @@ use serde_json::Value;
 static UPDATE_SCHEMA_METHODS: &[fn(&mut Value) -> bool] = &[
     macro_::maximum_minimum_related_keywords::update_min_max_related_keywords,
     const_::simple_const_cleanup,
+    enum_::simple_enum_cleanup,
     property_names::optimise_property_names,
     additional_properties::remove_empty_additional_properties,
     required::remove_empty_required,
