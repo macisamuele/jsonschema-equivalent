@@ -18,9 +18,11 @@ logging = []  # logging is automatically enabled on debug builds via `build.rs`
 
 [dev-dependencies]
 env_logger = "0"
+jsonschema = { git = "https://github.com/Stranger6667/jsonschema-rs.git", branch = "master" } # "0"
+json_schema_test_suite = "0"
+mockito = "0"
 pathsep = "0"
 test-case = "1"
-jsonschema = "0"
 
 [dependencies]
 lazy_static = "1"
