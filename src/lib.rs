@@ -118,12 +118,14 @@ mod tests {
 
     #[test_case(json!(null) => json!(null))]
     fn test_jsonschema_equivalent_ref(mut schema: Value) -> Value {
+        crate::init_logger();
         let _ = jsonschema_equivalent_ref(&mut schema);
         schema
     }
 
     #[test_case(json!(null) => json!(null))]
     fn test_jsonschema_equivalent(schema: Value) -> Value {
+        crate::init_logger();
         jsonschema_equivalent(schema)
     }
 }

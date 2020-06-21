@@ -7,17 +7,20 @@ use std::collections::HashSet;
 
 lazy_static::lazy_static! {
     static ref KEYWORDS_TYPE_ARRAY: HashSet<&'static str> = [
+        "additionalItems",
         "allOf",
         "anyOf",
-        "additionalItems",
-        "contains",
         "const",
+        "contains",
+        "else",
         "enum",
+        "if",
         "items",
         "maxItems",
         "minItems",
         "not",
         "oneOf",
+        "then",
         "type",
         "uniqueItems",
     ].iter().cloned().collect();
@@ -25,25 +28,31 @@ lazy_static::lazy_static! {
         "allOf",
         "anyOf",
         "const",
+        "else",
         "enum",
-        "type",
+        "if",
         "not",
         "oneOf",
+        "then",
+        "type",
     ].iter().cloned().collect();
     static ref KEYWORDS_TYPE_NULL: HashSet<&'static str> = KEYWORDS_TYPE_BOOLEAN.iter().cloned().collect();
     static ref KEYWORDS_TYPE_INTEGER: HashSet<&'static str> = [
         "allOf",
         "anyOf",
         "const",
+        "else",
         "enum",
         "exclusiveMaximum",
         "exclusiveMinimum",
         "format",
+        "if",
         "maximum",
         "minimum",
         "multipleOf",
         "not",
         "oneOf",
+        "then",
         "type",
     ].iter().cloned().collect();
     static ref KEYWORDS_TYPE_NUMBER: HashSet<&'static str> = KEYWORDS_TYPE_INTEGER.iter().cloned().collect();
@@ -51,9 +60,11 @@ lazy_static::lazy_static! {
         "additionalProperties",
         "allOf",
         "anyOf",
-        "dependencies",
         "const",
+        "dependencies",
+        "else",
         "enum",
+        "if",
         "maxProperties",
         "minProperties",
         "not",
@@ -62,21 +73,25 @@ lazy_static::lazy_static! {
         "properties",
         "propertyNames",
         "required",
+        "then",
         "type",
     ].iter().cloned().collect();
     static ref KEYWORDS_TYPE_STRING: HashSet<&'static str> = [
         "allOf",
         "anyOf",
-        "contentMediaType",
-        "contentEncoding",
         "const",
+        "contentEncoding",
+        "contentMediaType",
+        "else",
         "enum",
         "format",
+        "if",
         "maxLength",
         "minLength",
         "not",
         "oneOf",
         "pattern",
+        "then",
         "type",
     ].iter().cloned().collect();
 }
@@ -142,58 +157,98 @@ pub(crate) fn remove_extraneous_keys_keyword_type(schema: &mut Value) -> bool {
 #[cfg(test)]
 mod tests {
     use super::{optimise_keyword_type, remove_extraneous_keys_keyword_type};
+    use super::{
+        KEYWORDS_TYPE_ARRAY, KEYWORDS_TYPE_BOOLEAN, KEYWORDS_TYPE_INTEGER, KEYWORDS_TYPE_NULL,
+        KEYWORDS_TYPE_NUMBER, KEYWORDS_TYPE_OBJECT, KEYWORDS_TYPE_STRING,
+    };
+    use crate::constants::KEYWORDS;
     use crate::keywords::update_schema;
     use serde_json::{json, Value};
+    use std::collections::HashSet;
     use test_case::test_case;
+
+    #[test]
+    fn test_ensure_that_all_keywords_are_included_into_keyword_specific_types() {
+        assert_eq!(
+            &*KEYWORDS,
+            &[].iter()
+                .chain(KEYWORDS_TYPE_ARRAY.iter())
+                .chain(KEYWORDS_TYPE_BOOLEAN.iter())
+                .chain(KEYWORDS_TYPE_INTEGER.iter())
+                .chain(KEYWORDS_TYPE_NULL.iter())
+                .chain(KEYWORDS_TYPE_NUMBER.iter())
+                .chain(KEYWORDS_TYPE_OBJECT.iter())
+                .chain(KEYWORDS_TYPE_STRING.iter())
+                .cloned()
+                .collect::<HashSet<_>>()
+        );
+    }
 
     // Eventully add test cases for all the keywords to remove
     #[test_case(json!({}); "do nothing if type keyword is not present")]
     // {"type": "array", ...}
     #[test_case(json!({"type": "array"}))]
     #[test_case(json!({"type": "array", "additionalItems": true}))]
-    #[test_case(json!({"type": "array", "contains": [1]}))]
     #[test_case(json!({"type": "array", "const": ["value"]}))]
+    #[test_case(json!({"type": "array", "contains": [1]}))]
+    #[test_case(json!({"type": "array", "else": true}))]
     #[test_case(json!({"type": "array", "enum": [["item"]]}))]
+    #[test_case(json!({"type": "array", "if": true}))]
     #[test_case(json!({"type": "array", "items": {}}))]
     #[test_case(json!({"type": "array", "maxItems": 1}))]
     #[test_case(json!({"type": "array", "minItems": 1}))]
+    #[test_case(json!({"type": "array", "then": true}))]
     #[test_case(json!({"type": "array", "uniqueItems": true}))]
     // {"type": "boolean", ...}
     #[test_case(json!({"type": "boolean"}))]
     #[test_case(json!({"type": "boolean", "const": [true]}))]
+    #[test_case(json!({"type": "boolean", "else": true}))]
     #[test_case(json!({"type": "boolean", "enum": [true]}))]
+    #[test_case(json!({"type": "boolean", "if": true}))]
+    #[test_case(json!({"type": "boolean", "then": true}))]
     // {"type": "integer", ...}
     #[test_case(json!({"type": "integer"}))]
     #[test_case(json!({"type": "integer", "const": 1}))]
+    #[test_case(json!({"type": "integer", "else": true}))]
     #[test_case(json!({"type": "integer", "enum": [1, 2]}))]
     #[test_case(json!({"type": "integer", "exclusiveMaximum": 1}))]
     #[test_case(json!({"type": "integer", "exclusiveMinimum": 1}))]
     #[test_case(json!({"type": "integer", "format": "int32"}))]
+    #[test_case(json!({"type": "integer", "if": true}))]
     #[test_case(json!({"type": "integer", "maximum": 1}))]
     #[test_case(json!({"type": "integer", "minimum": 1}))]
     #[test_case(json!({"type": "integer", "multipleOf": 1}))]
+    #[test_case(json!({"type": "integer", "then": true}))]
     // {"type": "null", ...}
     #[test_case(json!({"type": "null"}))]
     #[test_case(json!({"type": "null", "const": [null]}))]
+    #[test_case(json!({"type": "null", "else": true}))]
     #[test_case(json!({"type": "null", "enum": [null]}))]
+    #[test_case(json!({"type": "null", "if": true}))]
+    #[test_case(json!({"type": "null", "then": true}))]
     // {"type": "number", ...}
     #[test_case(json!({"type": "number"}))]
     #[test_case(json!({"type": "number", "const": 1}))]
+    #[test_case(json!({"type": "number", "else": true}))]
     #[test_case(json!({"type": "number", "enum": [1, 2]}))]
     #[test_case(json!({"type": "number", "exclusiveMaximum": 1}))]
     #[test_case(json!({"type": "number", "exclusiveMinimum": 1}))]
     #[test_case(json!({"type": "number", "format": "int32"}))]
+    #[test_case(json!({"type": "number", "if": true}))]
     #[test_case(json!({"type": "number", "maximum": 1}))]
     #[test_case(json!({"type": "number", "minimum": 1}))]
     #[test_case(json!({"type": "number", "multipleOf": 1}))]
+    #[test_case(json!({"type": "number", "then": true}))]
     // {"type": "object", ...}
     #[test_case(json!({"type": "object"}))]
     #[test_case(json!({"type": "object", "additionalProperties": {}}))]
     #[test_case(json!({"type": "object", "allOf": []}))]
     #[test_case(json!({"type": "object", "anyOf": []}))]
-    #[test_case(json!({"type": "object", "dependencies": []}))]
     #[test_case(json!({"type": "object", "const": {"key": "value"}}))]
+    #[test_case(json!({"type": "object", "dependencies": []}))]
+    #[test_case(json!({"type": "object", "else": true}))]
     #[test_case(json!({"type": "object", "enum": [{"key": "value"}]}))]
+    #[test_case(json!({"type": "object", "if": true}))]
     #[test_case(json!({"type": "object", "maxProperties": 1}))]
     #[test_case(json!({"type": "object", "minProperties": 1}))]
     #[test_case(json!({"type": "object", "not": {}}))]
@@ -202,21 +257,25 @@ mod tests {
     #[test_case(json!({"type": "object", "properties": {}}))]
     #[test_case(json!({"type": "object", "propertyNames": {}}))]
     #[test_case(json!({"type": "object", "required": []}))]
+    #[test_case(json!({"type": "object", "then": true}))]
     // {"type": "string", ...}
     #[test_case(json!({"type": "string"}))]
-    #[test_case(json!({"type": "string", "contentMediaType": "application/json"}))]
-    #[test_case(json!({"type": "string", "contentEncoding": "base64"}))]
     #[test_case(json!({"type": "string", "const": ["key"]}))]
+    #[test_case(json!({"type": "string", "contentEncoding": "base64"}))]
+    #[test_case(json!({"type": "string", "contentMediaType": "application/json"}))]
+    #[test_case(json!({"type": "string", "else": true}))]
     #[test_case(json!({"type": "string", "enum": ["value"]}))]
     #[test_case(json!({"type": "string", "format": "date"}))]
+    #[test_case(json!({"type": "string", "if": true}))]
     #[test_case(json!({"type": "string", "maxLength": 1}))]
     #[test_case(json!({"type": "string", "minLength": 1}))]
     #[test_case(json!({"type": "string", "pattern": "key[0-9]+"}))]
+    #[test_case(json!({"type": "string", "then": true}))]
     #[allow(clippy::needless_pass_by_value)]
     fn test_remove_extraneous_keys_keyword_type_does_not_remove_keys(schema: Value) {
         crate::init_logger();
         let mut cloned_schema = schema.clone();
-        let _ = remove_extraneous_keys_keyword_type(&mut cloned_schema);
+        assert!(!remove_extraneous_keys_keyword_type(&mut cloned_schema));
         assert_eq!(schema, cloned_schema);
     }
 
