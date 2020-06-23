@@ -9,17 +9,23 @@ use std::ops::DerefMut;
 #[derive(Debug)]
 pub(crate) enum IntersectStatus<'s> {
     /// The updated `schema` fully includes the JSON Schema limitations imposed by `other_schema`
-    Complete { schema: &'s mut Value },
+    Complete {
+        schema: &'s mut Value,
+        updated_schema: bool,
+    },
     /// The updated `schema` partially includes the JSON Schema limitations imposed by `other_schema`
     /// This means that `other_schema` cannot be removed without altering the JSON Schema itself
-    Partial { schema: &'s mut Value },
+    Partial {
+        schema: &'s mut Value,
+        updated_schema: bool,
+    },
 }
 
 impl Deref for IntersectStatus<'_> {
     type Target = Value;
     fn deref(&self) -> &Self::Target {
         match self {
-            Self::Complete { schema } | Self::Partial { schema } => schema,
+            Self::Complete { schema, .. } | Self::Partial { schema, .. } => schema,
         }
     }
 }
@@ -27,7 +33,17 @@ impl Deref for IntersectStatus<'_> {
 impl DerefMut for IntersectStatus<'_> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         match self {
-            Self::Complete { schema } | Self::Partial { schema } => schema,
+            Self::Complete { schema, .. } | Self::Partial { schema, .. } => schema,
+        }
+    }
+}
+
+impl IntersectStatus<'_> {
+    fn is_schema_updated(&self) -> bool {
+        match self {
+            Self::Complete { updated_schema, .. } | Self::Partial { updated_schema, .. } => {
+                *updated_schema
+            }
         }
     }
 }
@@ -52,12 +68,18 @@ pub(crate) fn intersection_schema<'s>(
         Value::Bool(false) => {
             // if `other_schema` is a `false` schema then regrdless of `schema` all the values will be invalid. So the resulting schema is a `false` schema
             let _ = replace::with_false_schema(schema);
-            return IntersectStatus::Complete { schema };
+            return IntersectStatus::Complete {
+                schema,
+                updated_schema: true,
+            };
         }
         _ => {
             // if `other_schema` is a `true` schema then only `schema` will contribute to validation constraints
             // otherwise `other_schema` is not really a schema, so nothing to be intersected
-            return IntersectStatus::Complete { schema };
+            return IntersectStatus::Complete {
+                schema,
+                updated_schema: false,
+            };
         }
     };
     let schema_object = match schema {
@@ -65,21 +87,29 @@ pub(crate) fn intersection_schema<'s>(
         Value::Bool(true) => {
             // if `self` is a `true` schema then only `other_schema` will contribute to validation constraints
             let _ = std::mem::replace(schema, other_schema.clone());
-            return IntersectStatus::Complete { schema };
+            return IntersectStatus::Complete {
+                schema,
+                updated_schema: true,
+            };
         }
         _ => {
             // if `self` is a `false` schema then regrdless of `other` all the values will be invalid
             // otherwise `schema` is not really a schema, so nothing to be intersected
-            return IntersectStatus::Complete { schema };
+            return IntersectStatus::Complete {
+                schema,
+                updated_schema: false,
+            };
         }
     };
 
     let mut is_complete_intersection = true;
+    let mut updated_schema = false;
 
     for (key, other_value) in other_schema_object {
         match schema_object.entry(key) {
             Entry::Vacant(entry) => {
                 let _ = entry.insert(other_value.clone());
+                updated_schema = true;
             }
             Entry::Occupied(mut entry) => {
                 let mut schema_value = entry.get_mut();
@@ -91,26 +121,34 @@ pub(crate) fn intersection_schema<'s>(
                             if let (Value::Array(schema_items), Value::Array(other_items)) =
                                 (schema_value, other_value)
                             {
-                                join_and_deduplicate(schema_items, other_items);
+                                updated_schema |= join_and_deduplicate(schema_items, other_items);
                             }
                         }
                         "const" | "contentEncoding" | "contentMediaType" | "format" => {
                             if schema_value != other_value {
                                 let _ = replace::with_false_schema(schema);
-                                return IntersectStatus::Complete { schema };
+                                return IntersectStatus::Complete {
+                                    schema,
+                                    updated_schema: true,
+                                };
                             }
                         }
                         "contains" | "propertyNames" => {
-                            let _ = intersection_schema(schema_value, other_value);
+                            updated_schema |=
+                                intersection_schema(schema_value, other_value).is_schema_updated();
                         }
                         "enum" => {
                             if let (Value::Array(schema_items), Value::Array(other_items)) =
                                 (schema_value, other_value)
                             {
-                                common_values_and_deduplicate(schema_items, other_items);
+                                updated_schema |=
+                                    common_values_and_deduplicate(schema_items, other_items);
                                 if schema_items.is_empty() {
                                     let _ = replace::with_false_schema(schema);
-                                    return IntersectStatus::Complete { schema };
+                                    return IntersectStatus::Complete {
+                                        schema,
+                                        updated_schema: true,
+                                    };
                                 }
                             };
                         }
@@ -118,18 +156,22 @@ pub(crate) fn intersection_schema<'s>(
                         | "maximum" => {
                             if other_value.as_f64() < schema_value.as_f64() {
                                 let _ = entry.insert(other_value.clone());
+                                updated_schema |= true;
                             }
                         }
                         "exclusiveMinimum" | "minItems" | "minLength" | "minProperties"
                         | "minimum" => {
                             if other_value.as_f64() > schema_value.as_f64() {
                                 let _ = entry.insert(other_value.clone());
+                                updated_schema |= true;
                             }
                         }
                         "items" => {
                             match (&mut schema_value, &other_value) {
                                 (Value::Object(_), Value::Object(_)) => {
-                                    let _ = intersection_schema(schema_value, other_value);
+                                    updated_schema |=
+                                        intersection_schema(schema_value, other_value)
+                                            .is_schema_updated();
                                 }
                                 (Value::Object(_), Value::Array(other_items)) => {
                                     *schema_value = Value::Array(
@@ -137,10 +179,11 @@ pub(crate) fn intersection_schema<'s>(
                                             .iter()
                                             .map(|other_item| {
                                                 let mut other_item_clone = other_item.clone();
-                                                let _ = intersection_schema(
+                                                updated_schema |= intersection_schema(
                                                     &mut other_item_clone,
                                                     schema_value,
-                                                );
+                                                )
+                                                .is_schema_updated();
                                                 other_item_clone
                                             })
                                             .collect::<Vec<_>>(),
@@ -148,19 +191,24 @@ pub(crate) fn intersection_schema<'s>(
                                 }
                                 (Value::Array(schema_items), Value::Object(_)) => {
                                     schema_items.iter_mut().for_each(|schema_item| {
-                                        let _ = intersection_schema(schema_item, other_value);
+                                        updated_schema |=
+                                            intersection_schema(schema_item, other_value)
+                                                .is_schema_updated();
                                     });
                                 }
                                 (Value::Array(schema_items), Value::Array(other_items)) => {
                                     schema_items.iter_mut().zip(other_items).for_each(
                                         |(schema_item, other_item)| {
-                                            let _ = intersection_schema(schema_item, other_item);
+                                            updated_schema |=
+                                                intersection_schema(schema_item, other_item)
+                                                    .is_schema_updated();
                                         },
                                     );
                                     if other_items.len() > schema_items.len() {
                                         schema_items.extend(
                                             other_items.iter().skip(schema_items.len()).cloned(),
                                         );
+                                        updated_schema = true;
                                     }
                                 }
                                 _ => {}
@@ -175,17 +223,23 @@ pub(crate) fn intersection_schema<'s>(
 
                             let final_primiive_types =
                                 schema_primitive_types & other_primitive_types;
-                            if schema_primitive_types != final_primiive_types
-                                && (!replace::type_with(schema_object, final_primiive_types)
-                                    || schema_object.get("type") == None)
-                            {
-                                let _ = replace::with_false_schema(schema);
-                                return IntersectStatus::Complete { schema };
+                            if schema_primitive_types != final_primiive_types {
+                                updated_schema = true;
+                                if !replace::type_with(schema_object, final_primiive_types)
+                                    || schema_object.get("type") == None
+                                {
+                                    let _ = replace::with_false_schema(schema);
+                                    return IntersectStatus::Complete {
+                                        schema,
+                                        updated_schema: true,
+                                    };
+                                }
                             }
                         }
                         "uniqueItems" => {
                             if &Value::Bool(true) == other_value {
-                                let _ = entry.insert(Value::Bool(true));
+                                let old_value = entry.insert(Value::Bool(true));
+                                updated_schema |= old_value != Value::Bool(true);
                             }
                         }
 
@@ -203,7 +257,7 @@ pub(crate) fn intersection_schema<'s>(
                         | "patternProperties"
                         | "properties"
                         | "then" => {
-                            is_complete_intersection = true;
+                            is_complete_intersection = false;
                         }
 
                         // TODO: Propose implementation for properties
@@ -212,7 +266,7 @@ pub(crate) fn intersection_schema<'s>(
                         //  * if additionalProperties are defined and the intersection of the schemas is not a `false` schema and no patternProperties are defined
                         _ => {
                             log::debug!("Unrecognized keyword: {}", key);
-                            is_complete_intersection = true;
+                            is_complete_intersection = false;
                         }
                     }
                 }
@@ -221,9 +275,15 @@ pub(crate) fn intersection_schema<'s>(
     }
 
     if is_complete_intersection {
-        IntersectStatus::Complete { schema }
+        IntersectStatus::Complete {
+            schema,
+            updated_schema,
+        }
     } else {
-        IntersectStatus::Partial { schema }
+        IntersectStatus::Partial {
+            schema,
+            updated_schema,
+        }
     }
 }
 
@@ -638,7 +698,23 @@ mod tests {
             );
         }
 
-        assert_eq!(&*intersection_schema(&mut schema, &other), &expected_schema);
+        let original_schema = schema.clone();
+        let intersect_status = intersection_schema(&mut schema, &other);
+        assert_eq!(&*intersect_status, &expected_schema);
+
+        if intersect_status.is_schema_updated() {
+            assert_ne!(
+                &*intersect_status, &original_schema,
+                "The schema seems not updated, but it was. Original schema = {}, Final schema = {}",
+                original_schema, &*intersect_status
+            );
+        } else {
+            assert_eq!(
+                &*intersect_status, &original_schema,
+                "The schema seems updated, but it was not supposed to be. Original schema = {}, Final schema = {}",
+                original_schema, &*intersect_status
+            );
+        }
 
         if let Some(valid_instance) = &valid {
             assert!(
