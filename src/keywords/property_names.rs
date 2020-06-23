@@ -1,5 +1,6 @@
 use crate::helpers::{is, replace, types::PrimitiveTypesBitMap};
 use crate::primitive_type::PrimitiveType;
+use jsonschema_equivalent_rule_processor_logger::log_processing;
 use serde_json::Value;
 
 /// `propertyNames` should contain a schema that will be used to validate the properties
@@ -11,7 +12,7 @@ use serde_json::Value;
 ///     then removing `propertyNames` would not alter the filtering capability of the schema
 ///  * if a JSON Object would be a valid instance, then we know that the attributes MUST be strings so we
 ///     can simplify the `propertyNames` schema allowing only `type` string instances
-#[rule_processor_logger::log_processing]
+#[log_processing(cfg(feature = "logging"))]
 pub(crate) fn optimise_property_names(schema: &mut Value) -> bool {
     let schema_object = if let Some(value) = schema.as_object_mut() {
         value

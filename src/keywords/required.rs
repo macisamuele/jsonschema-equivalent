@@ -1,7 +1,8 @@
+use jsonschema_equivalent_rule_processor_logger::log_processing;
 use serde_json::Value;
 
 /// Removes empty `required` schemas.
-#[rule_processor_logger::log_processing]
+#[log_processing(cfg(feature = "logging"))]
 pub(crate) fn remove_empty_required(schema: &mut Value) -> bool {
     match schema.get("required") {
         Some(Value::Array(array)) if array.is_empty() => {

@@ -2,6 +2,7 @@ use crate::{
     helpers::{preserve_keys, replace, types::PrimitiveTypesBitMap},
     primitive_type::PrimitiveType,
 };
+use jsonschema_equivalent_rule_processor_logger::log_processing;
 use serde_json::Value;
 use std::collections::HashSet;
 
@@ -97,7 +98,7 @@ lazy_static::lazy_static! {
 }
 
 /// Removes duplicated types, avoid not need of list and remove the keyword if all the types are included
-#[rule_processor_logger::log_processing]
+#[log_processing(cfg(feature = "logging"))]
 pub(crate) fn optimise_keyword_type(schema: &mut Value) -> bool {
     let schema_object = if let Some(value) = schema.as_object_mut() {
         value
@@ -113,7 +114,7 @@ pub(crate) fn optimise_keyword_type(schema: &mut Value) -> bool {
 
 /// Removes all the schema keywords that are irrelevant/incongruent with the presence
 /// of a specific `type` keyword
-#[rule_processor_logger::log_processing]
+#[log_processing(cfg(feature = "logging"))]
 pub(crate) fn remove_extraneous_keys_keyword_type(schema: &mut Value) -> bool {
     let schema_object = if let Some(value) = schema.as_object_mut() {
         value

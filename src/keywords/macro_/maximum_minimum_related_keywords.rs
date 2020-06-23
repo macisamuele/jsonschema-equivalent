@@ -1,5 +1,6 @@
 use crate::helpers::{replace, types::PrimitiveTypesBitMap};
 use crate::primitive_type::PrimitiveType;
+use jsonschema_equivalent_rule_processor_logger::log_processing;
 use serde_json::Value;
 
 /// This helper method allows to centralise the logic responsible for the update of the schema
@@ -35,7 +36,7 @@ fn cleanup_incongruent_keywords(
 /// Update schema with incongruent `exclusiveMaximum` and `exclusiveMinimum`.
 /// Replaces the schema with `false` schema if `exclusiveMaximum`
 /// is smaller than `exclusiveMinimum`
-#[rule_processor_logger::log_processing]
+#[log_processing(cfg(feature = "logging"))]
 fn update_exclusive_maximum_minimum(
     schema: &mut Value,
     schema_primitive_types: &PrimitiveTypesBitMap,
@@ -62,7 +63,7 @@ fn update_exclusive_maximum_minimum(
 /// Update schema with incongruent `maxItems` and `minItems`.
 /// Replaces the schema with `false` schema if `maxItems`
 /// is smaller than `minItems`
-#[rule_processor_logger::log_processing]
+#[log_processing(cfg(feature = "logging"))]
 fn update_max_min_items(schema: &mut Value, schema_primitive_types: &PrimitiveTypesBitMap) -> bool {
     if schema_primitive_types.contains(PrimitiveType::Array) {
         match (
@@ -85,7 +86,7 @@ fn update_max_min_items(schema: &mut Value, schema_primitive_types: &PrimitiveTy
 /// Update schema with incongruent `maxLength` and `minLength`.
 /// Replaces the schema with `false` schema if `maxLength`
 /// is smaller than `minLength`
-#[rule_processor_logger::log_processing]
+#[log_processing(cfg(feature = "logging"))]
 fn update_max_min_length(
     schema: &mut Value,
     schema_primitive_types: &PrimitiveTypesBitMap,
@@ -111,7 +112,7 @@ fn update_max_min_length(
 /// Update schema with incongruent `maxProperties` and `minProperties`.
 /// Replaces the schema with `false` schema if `maxProperties`
 /// is smaller than `minProperties`
-#[rule_processor_logger::log_processing]
+#[log_processing(cfg(feature = "logging"))]
 fn update_max_min_properties(
     schema: &mut Value,
     schema_primitive_types: &PrimitiveTypesBitMap,
@@ -137,7 +138,7 @@ fn update_max_min_properties(
 /// Update schema with incongruent `maximum` and `minimum`.
 /// Replaces the schema with `false` schema if `maximum`
 /// is smaller than `minimum`
-#[rule_processor_logger::log_processing]
+#[log_processing(cfg(feature = "logging"))]
 fn update_maximum_minimum(
     schema: &mut Value,
     schema_primitive_types: &PrimitiveTypesBitMap,
@@ -166,7 +167,7 @@ fn update_maximum_minimum(
 /// The method interacts with `exclusiveMaximum`, `exclusiveMinimum`, `maxItems`,
 /// `maxLength`, `maxProperties`, `maximum`, `minItems`, `minLength`, `minProperties`,
 /// `minimum` keywords
-#[rule_processor_logger::log_processing]
+#[log_processing(cfg(feature = "logging"))]
 pub(crate) fn update_max_min_related_keywords(schema: &mut Value) -> bool {
     let mut updated_schema = false;
     // We're applying the keyword updates only if `type` keyword is present because

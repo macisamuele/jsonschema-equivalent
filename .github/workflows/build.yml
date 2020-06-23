@@ -20,6 +20,7 @@ jobs:
     - uses: actions-rs/cargo@v1
       with:
         command: check
+        args: --workspace
 
   test-coverage:
     name: Test + Coverage (nightly)
@@ -28,27 +29,17 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: true
-    - name: Start background server    # User for integration tests
-      run: |
-        # This assumes that python3 is installed on the system
-        /usr/bin/env python3 -m pip install flask
-        # Starts the server in background
-        /usr/bin/env python3 ./tests/suite/bin/jsonschema_suite serve &
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: nightly
         override: true
     - uses: actions-rs/cargo@v1
       with:
-        command: clean
-    - uses: actions-rs/cargo@v1
-      with:
         command: test
-        args: --no-fail-fast
+        args: --no-fail-fast --workspace
       env:
         CARGO_INCREMENTAL: '0'
-        RUSTFLAGS: -Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests
-        RUSTDOCFLAGS: -Cpanic=abort
+        RUSTFLAGS: -Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off
     - id: coverage
       uses: actions-rs/grcov@v0.1
     - name: Upload coverage to Codecov
@@ -88,4 +79,4 @@ jobs:
     - uses: actions-rs/cargo@v1
       with:
         command: clippy
-        args: --all-targets
+        args: --all-targets --workspace

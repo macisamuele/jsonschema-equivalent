@@ -9,7 +9,7 @@ use serde_json::Value;
 /// * Removal of enum values which are not compliant with the `schema` allowed types
 /// * Enum of a single value are equivalent to `const` keyword (after removal stage)
 /// * Enum with no possible variants (after removal stage) are requivalent to a `false` schema
-#[rule_processor_logger::log_processing]
+#[jsonschema_equivalent_rule_processor_logger::log_processing(cfg(feature = "logging"))]
 pub(crate) fn simple_enum_cleanup(schema: &mut Value) -> bool {
     let schema_object = if let Some(value) = schema.as_object_mut() {
         value

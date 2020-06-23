@@ -1,14 +1,33 @@
 name: Release on crates.io
 on:
   push:
-    branches-ignore: '**'
     tags: v**
 
 jobs:
-  publish:
+
+  test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+    - uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --workspace
+
+  publish-rule-processor-logger:
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
@@ -21,4 +40,24 @@ jobs:
     - uses: actions-rs/cargo@v1
       with:
         command: publish
+        args: --manifest-path ./rule_processor_logger/Cargo.toml
 
+  publish:
+    needs: [publish-rule-processor-logger]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+    - uses: actions-rs/cargo@v1
+      with:
+        command: login
+        args: ${{ secrets.CRATES_IO_TOKEN }}
+    - uses: actions-rs/cargo@v1
+      with:
+        command: publish

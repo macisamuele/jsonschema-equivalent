@@ -2,13 +2,14 @@ use crate::{
     helpers::{replace, types::PrimitiveTypesBitMap},
     primitive_type::PrimitiveType,
 };
+use jsonschema_equivalent_rule_processor_logger::log_processing;
 use serde_json::Value;
 
 /// Simplify a schema containing `const` keywords.
 /// The simplifications include:
 /// * removing types that are not in sync with the type of the `const` value
 /// * if no types are left after previous removal, then the `schema` is a `false` schema
-#[rule_processor_logger::log_processing]
+#[log_processing(cfg(feature = "logging"))]
 pub(crate) fn simple_const_cleanup(schema: &mut Value) -> bool {
     let schema_object = if let Some(value) = schema.as_object_mut() {
         value

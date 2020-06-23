@@ -1,9 +1,13 @@
-//! # jsonschema-equivalent
+//! [![ci](https://github.com/macisamuele/jsonschema-equivalent/workflows/ci/badge.svg)](https://github.com/macisamuele/jsonschema-equivalent/actions)
+//! [![codecov](https://codecov.io/gh/macisamuele/jsonschema-equivalent/branch/master/graph/badge.svg)](https://codecov.io/gh/macisamuele/jsonschema-equivalent)
+//! [![Crates.io](https://img.shields.io/crates/v/jsonschema-equivalent.svg)](https://crates.io/crates/jsonschema-equivalent)
+//! [![docs.rs](https://docs.rs/jsonschema-equivalent/badge.svg)](https://docs.rs/jsonschema-equivalent/)
 //!
 //! A JSON Schema optimiser library.
 //!
 //! The main idea is to flatten the input schema and to remove keywords that are not providing any restriction on the schema.
 //! Possible examples are
+//!
 //! * `{"type": "string", "minimum": 0}` is equivalent to `{"type": "string"}` as `minimum` keyword applies only to numberic types
 //! * `{"allOf": [{"type": "integer"}, {"type": "number"}]}` is equivalent to `{"type": "number"}` as `integer` is included in `number`
 //! * `{"allOf": [{"type": "integer"}, {"type": "string"}]}` is equivalent to `{"type": ["integer", "string"]}`
@@ -11,7 +15,8 @@
 //!
 //! By flattening and removing extraneous/incongruent keywords we are able to provide a smaller and equivalent schema. Thanks to this, JSON validators can spend CPU cycles on verifying the components that are actually providing restriction on the schema instead of verifying conditions that we know a-priori not been applicable to certain contexts.
 //!
-//! ## How to use
+//! # How to use
+//!
 //! ```toml
 //! # Cargo.toml
 //! jsonschema-equivalent = "0"

@@ -1,8 +1,9 @@
 use crate::helpers::is;
+use jsonschema_equivalent_rule_processor_logger::log_processing;
 use serde_json::Value;
 
 /// Removes empty `additionalProperties` schemas.
-#[rule_processor_logger::log_processing]
+#[log_processing(cfg(feature = "logging"))]
 pub(crate) fn remove_empty_additional_properties(schema: &mut Value) -> bool {
     let schema_object = if let Some(value) = schema.as_object_mut() {
         value
