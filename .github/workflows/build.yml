@@ -5,6 +5,7 @@ on:
   push:
     branches:
     - master
+    - maci-use-experimental-grcov
 
 jobs:
   check:
@@ -41,7 +42,9 @@ jobs:
         CARGO_INCREMENTAL: '0'
         RUSTFLAGS: -Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off
     - id: coverage
-      uses: actions-rs/grcov@v0.1
+      uses: macisamuele/actions-rs-grcov@maci-install-from-releases
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1.0.5
       with:
