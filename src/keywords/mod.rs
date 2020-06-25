@@ -3,6 +3,7 @@
 mod additional_properties;
 mod const_;
 mod enum_;
+mod if_;
 mod macro_;
 mod property_names;
 mod required;
@@ -28,11 +29,11 @@ static UPDATE_SCHEMA_METHODS: &[fn(&mut Value) -> bool] = &[
     additional_properties::remove_empty_additional_properties,
     const_::simple_const_cleanup,
     enum_::simple_enum_cleanup,
+    if_::simplify_if,
     macro_::maximum_minimum_related_keywords::update_max_min_related_keywords,
     property_names::optimise_property_names,
     required::remove_empty_required,
     type_::optimise_keyword_type,
-    type_::remove_extraneous_keys_keyword_type,
 ];
 
 /// Perform the schema optimisaton without descending the schema

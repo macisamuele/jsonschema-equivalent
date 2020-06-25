@@ -6,7 +6,7 @@ use std::str::FromStr;
 
 /// This method does expose the one-liner pretty-print value of a given JSON value
 /// Respect the default `Value::to_string` method this ensures that the separators (`:` and `,`) have a space after
-/// NOTE: The code is far from being good looking or performing, but this is mostly used to esure that all_rules.md has
+/// NOTE: The code is far from being good looking or performing, but this is mostly used to esure that `all_rules.md` has
 /// considently formatted JSON fields
 fn pretty_format_json_value(value: &Value) -> String {
     value.to_string().replace(":", ": ").replace(",", ", ")
