@@ -49,7 +49,6 @@ pub(crate) fn preserve_keys(
 /// length is "small" and we can eventualy make this assumption. An alternative would be to convert all the items to
 /// something ordinable/hashable (like via `ToString::to_string`) but it would require more memory and still a
 /// linear loop for the set creation.
-#[allow(dead_code)]
 fn join_and_deduplicate(schema: &mut Vec<Value>, other: &[Value]) -> bool {
     let mut added_values = false;
     for other_value in other {
@@ -73,7 +72,6 @@ fn join_and_deduplicate(schema: &mut Vec<Value>, other: &[Value]) -> bool {
 /// length is "small" and we can eventualy make this assumption. An alternative would be to convert all the items to
 /// something ordinable/hashable (like via `ToString::to_string`) but it would require more memory and still a
 /// linear loop for the set creation.
-#[allow(dead_code)]
 fn common_values_and_deduplicate(schema: &mut Vec<Value>, other: &[Value]) -> bool {
     let mut removed_values = false;
     let schema_indexes_to_remove: Vec<usize> = schema

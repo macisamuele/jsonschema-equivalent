@@ -1,7 +1,6 @@
 use serde_json::Value;
 
 /// Checks if the input schema is a `false` schema
-#[allow(dead_code)]
 #[inline]
 pub(crate) fn false_schema(schema: &Value) -> bool {
     match schema {

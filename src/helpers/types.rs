@@ -149,6 +149,10 @@ impl PrimitiveTypesBitMap {
         self.0 == 0
     }
 
+    pub(crate) fn is_complete(self) -> bool {
+        self.0 == *PRIMITIVE_TYPES_BIT_MAP_ALL_TYPES
+    }
+
     pub(crate) fn has_other_primitive_types_other_than(
         self,
         primitive_type: PrimitiveType,

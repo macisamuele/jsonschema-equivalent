@@ -57,7 +57,6 @@ impl ToString for PrimitiveType {
     }
 }
 impl PrimitiveType {
-    #[allow(dead_code)]
     pub(crate) fn from_serde_value(value: &Value) -> Self {
         match value {
             Value::Array(_) => Self::Array,

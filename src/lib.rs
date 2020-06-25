@@ -123,7 +123,14 @@ pub(crate) fn base_test_keyword_processor(
     init_logger();
     let mut processed_schema: Value = schema.clone();
     let is_schema_updated = keyword_processing_method(&mut processed_schema);
-    assert_eq!(is_schema_updated, schema != &processed_schema);
+    assert_eq!(
+        is_schema_updated,
+        schema != &processed_schema,
+        "is_schema_updated={} but {} != {}",
+        is_schema_updated,
+        schema,
+        processed_schema
+    );
     processed_schema
 }
 
