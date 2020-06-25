@@ -60,15 +60,14 @@ mod tests {
     use serde_json::{json, Value};
     use test_case::test_case;
 
-    #[test_case(json!({}) => json!({}))]
-    #[test_case(json!({"if": false, "then": {"minLength": 0}, "else": {"maxLength": 0}}) => json!({"allOf": [{"maxLength": 0}]}))]
-    #[test_case(json!({"if": true, "then": {"minLength": 0}, "else": {"maxLength": 0}}) => json!({"allOf": [{"minLength": 0}]}))]
-    #[test_case(json!({"if": {"type": "string"}, "then": {"minLength": 0}, "else": {"maxLength": 0}}) => json!({"if": {"type": "string"}, "then": {"minLength": 0}, "else": {"maxLength": 0}}))]
-    #[test_case(json!({"if": false}) => json!({}))]
-    #[test_case(json!({"if": true}) => json!({}))]
-    #[test_case(json!({"if": {"type": "string"}}) => json!({}))]
-    fn test_simplify_if(mut value: Value) -> Value {
-        let _ = simplify_if(&mut value);
-        value
+    #[test_case(&json!({}) => json!({}))]
+    #[test_case(&json!({"if": false, "then": {"minLength": 0}, "else": {"maxLength": 0}}) => json!({"allOf": [{"maxLength": 0}]}))]
+    #[test_case(&json!({"if": true, "then": {"minLength": 0}, "else": {"maxLength": 0}}) => json!({"allOf": [{"minLength": 0}]}))]
+    #[test_case(&json!({"if": {"type": "string"}, "then": {"minLength": 0}, "else": {"maxLength": 0}}) => json!({"if": {"type": "string"}, "then": {"minLength": 0}, "else": {"maxLength": 0}}))]
+    #[test_case(&json!({"if": false}) => json!({}))]
+    #[test_case(&json!({"if": true}) => json!({}))]
+    #[test_case(&json!({"if": {"type": "string"}}) => json!({}))]
+    fn test_simplify_if(schema: &Value) -> Value {
+        crate::base_test_keyword_processor(&simplify_if, schema)
     }
 }

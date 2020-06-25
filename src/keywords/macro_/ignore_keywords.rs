@@ -41,15 +41,14 @@ mod tests {
     use serde_json::{json, Value};
     use test_case::test_case;
 
-    #[test_case(json!({}) => json!({}))]
-    #[test_case(json!({"additionalItems": true, "items": true}) => json!({"additionalItems": true, "items": true}))]
-    #[test_case(json!({"additionalItems": true}) => json!({}))]
-    #[test_case(json!({"else": true, "if": true}) => json!({"else": true, "if": true}))]
-    #[test_case(json!({"else": true}) => json!({}))]
-    #[test_case(json!({"then": true, "if": true}) => json!({"then": true, "if": true}))]
-    #[test_case(json!({"then": true}) => json!({}))]
-    fn test_remove_keywords_in_must_ignore_groups(mut value: Value) -> Value {
-        let _ = remove_keywords_in_must_ignore_groups(&mut value);
-        value
+    #[test_case(&json!({}) => json!({}))]
+    #[test_case(&json!({"additionalItems": true, "items": true}) => json!({"additionalItems": true, "items": true}))]
+    #[test_case(&json!({"additionalItems": true}) => json!({}))]
+    #[test_case(&json!({"else": true, "if": true}) => json!({"else": true, "if": true}))]
+    #[test_case(&json!({"else": true}) => json!({}))]
+    #[test_case(&json!({"then": true, "if": true}) => json!({"then": true, "if": true}))]
+    #[test_case(&json!({"then": true}) => json!({}))]
+    fn test_remove_keywords_in_must_ignore_groups(value: &Value) -> Value {
+        crate::base_test_keyword_processor(&remove_keywords_in_must_ignore_groups, value)
     }
 }

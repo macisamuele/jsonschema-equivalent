@@ -109,19 +109,17 @@ mod tests {
     use serde_json::{json, Value};
     use test_case::test_case;
 
-    #[test_case(json!({"propertyNames": {}}) => json!({}))]
-    #[test_case(json!({"type": "integer", "propertyNames": {"type": "string", "minLength": 1}}) => json!({"type": "integer"}))]
-    #[test_case(json!({"type": "object", "minProperties": 1, "propertyNames": false}) => json!(false))]
-    #[test_case(json!({"type": "object", "minProperties": 1, "propertyNames": {"type": "number"}}) => json!(false))]
+    #[test_case(&json!({"propertyNames": {}}) => json!({}))]
+    #[test_case(&json!({"type": "integer", "propertyNames": {"type": "string", "minLength": 1}}) => json!({"type": "integer"}))]
+    #[test_case(&json!({"type": "object", "minProperties": 1, "propertyNames": false}) => json!(false))]
+    #[test_case(&json!({"type": "object", "minProperties": 1, "propertyNames": {"type": "number"}}) => json!(false))]
     // NOTE: The extraneous properties (after removing `type` object) would be remove by an the handler of `type` keyword
-    #[test_case(json!({"type": ["number", "object"], "minProperties": 1, "propertyNames": false}) => json!({"type": "number", "minProperties": 1, "propertyNames": false}))]
-    #[test_case(json!({"type": ["number", "object"], "minProperties": 1, "propertyNames": {"type": "number"}}) => json!({"type": "number", "minProperties": 1, "propertyNames": {"type": "number"}}))]
-    #[test_case(json!({"type": "object", "propertyNames": {"type": "string"}}) => json!({"type": "object"}))]
-    #[test_case(json!({"type": "object", "propertyNames": {"type": "number"}}) => json!({"type": "object", "maxProperties": 0}))]
-    #[test_case(json!({"type": "object", "propertyNames": {"minLength": 1}}) => json!({"type": "object", "propertyNames": {"minLength": 1, "type": "string"}}))]
-    fn test_optimise_property_names(mut schema: Value) -> Value {
-        crate::init_logger();
-        let _ = optimise_property_names(&mut schema);
-        schema
+    #[test_case(&json!({"type": ["number", "object"], "minProperties": 1, "propertyNames": false}) => json!({"type": "number", "minProperties": 1, "propertyNames": false}))]
+    #[test_case(&json!({"type": ["number", "object"], "minProperties": 1, "propertyNames": {"type": "number"}}) => json!({"type": "number", "minProperties": 1, "propertyNames": {"type": "number"}}))]
+    #[test_case(&json!({"type": "object", "propertyNames": {"type": "string"}}) => json!({"type": "object"}))]
+    #[test_case(&json!({"type": "object", "propertyNames": {"type": "number"}}) => json!({"type": "object", "maxProperties": 0}))]
+    #[test_case(&json!({"type": "object", "propertyNames": {"minLength": 1}}) => json!({"type": "object", "propertyNames": {"minLength": 1, "type": "string"}}))]
+    fn test_optimise_property_names(schema: &Value) -> Value {
+        crate::base_test_keyword_processor(&optimise_property_names, schema)
     }
 }

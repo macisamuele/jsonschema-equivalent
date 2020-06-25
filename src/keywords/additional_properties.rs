@@ -27,13 +27,11 @@ mod tests {
     use serde_json::{json, Value};
     use test_case::test_case;
 
-    #[test_case(json!({}) => json!({}))]
-    #[test_case(json!({"additionalProperties": true}) => json!({}))]
-    #[test_case(json!({"additionalProperties": {}}) => json!({}))]
-    #[test_case(json!({"additionalProperties": false}) => json!({"additionalProperties": false}))]
-    fn test_remove_empty_additional_properties(mut schema: Value) -> Value {
-        crate::init_logger();
-        let _ = remove_empty_additional_properties(&mut schema);
-        schema
+    #[test_case(&json!({}) => json!({}))]
+    #[test_case(&json!({"additionalProperties": true}) => json!({}))]
+    #[test_case(&json!({"additionalProperties": {}}) => json!({}))]
+    #[test_case(&json!({"additionalProperties": false}) => json!({"additionalProperties": false}))]
+    fn test_remove_empty_additional_properties(schema: &Value) -> Value {
+        crate::base_test_keyword_processor(&remove_empty_additional_properties, schema)
     }
 }

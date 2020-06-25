@@ -25,7 +25,7 @@ pub(crate) fn simple_const_cleanup(schema: &mut Value) -> bool {
             return false;
         }
 
-        let const_primitive_type = dbg![PrimitiveType::from_serde_value(dbg![const_value])];
+        let const_primitive_type = PrimitiveType::from_serde_value(const_value);
         if schema_primitive_types.contains(const_primitive_type) {
             replace::type_with(
                 schema_object,
@@ -53,19 +53,17 @@ mod tests {
     use serde_json::{json, Value};
     use test_case::test_case;
 
-    #[test_case(json!({}) => json!({}))]
-    #[test_case(json!({"const": []}) => json!({"const": [], "type": "array"}))]
-    #[test_case(json!({"const": 1}) => json!({"const": 1, "type": "number"}))]
-    #[test_case(json!({"const": true, "type": "boolean"}) => json!({"const": true, "type": "boolean"}))]
-    #[test_case(json!({"const": "string", "type": "boolean"}) => json!(false))]
-    #[test_case(json!({"const": "some-text", "type": ["boolean", "string"]}) => json!({"const": "some-text", "type": "string"}))]
-    #[test_case(json!({"const": 1, "type": "integer"}) => json!({"const": 1, "type": "integer"}))]
-    #[test_case(json!({"const": 1, "type": "number"}) => json!({"const": 1, "type": "number"}))]
-    #[test_case(json!({"const": 1, "type": ["array", "integer"]}) => json!({"const": 1, "type": "integer"}))]
-    #[test_case(json!({"const": 1, "type": ["array", "number"]}) => json!({"const": 1, "type": "number"}))]
-    fn test_simple_const_cleanup(mut schema: Value) -> Value {
-        crate::init_logger();
-        let _ = simple_const_cleanup(&mut schema);
-        schema
+    #[test_case(&json!({}) => json!({}))]
+    #[test_case(&json!({"const": []}) => json!({"const": [], "type": "array"}))]
+    #[test_case(&json!({"const": 1}) => json!({"const": 1, "type": "number"}))]
+    #[test_case(&json!({"const": true, "type": "boolean"}) => json!({"const": true, "type": "boolean"}))]
+    #[test_case(&json!({"const": "string", "type": "boolean"}) => json!(false))]
+    #[test_case(&json!({"const": "some-text", "type": ["boolean", "string"]}) => json!({"const": "some-text", "type": "string"}))]
+    #[test_case(&json!({"const": 1, "type": "integer"}) => json!({"const": 1, "type": "integer"}))]
+    #[test_case(&json!({"const": 1, "type": "number"}) => json!({"const": 1, "type": "number"}))]
+    #[test_case(&json!({"const": 1, "type": ["array", "integer"]}) => json!({"const": 1, "type": "integer"}))]
+    #[test_case(&json!({"const": 1, "type": ["array", "number"]}) => json!({"const": 1, "type": "number"}))]
+    fn test_simple_const_cleanup(schema: &Value) -> Value {
+        crate::base_test_keyword_processor(&simple_const_cleanup, schema)
     }
 }

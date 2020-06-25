@@ -203,125 +203,121 @@ mod tests {
 
     fn test(
         keyword_update_logic: fn(&mut Value, &PrimitiveTypesBitMap) -> bool,
-        mut schema: Value,
+        schema: &Value,
     ) -> Value {
-        crate::init_logger();
-        let schema_primitive_types = PrimitiveTypesBitMap::from_schema(&schema);
-        let _ = keyword_update_logic(&mut schema, &schema_primitive_types);
-        schema
+        let schema_primitive_types = PrimitiveTypesBitMap::from_schema(schema);
+        crate::base_test_keyword_processor(
+            &|schema| keyword_update_logic(schema, &schema_primitive_types),
+            schema,
+        )
     }
 
-    #[test_case(json!({"type": "integer", "exclusiveMaximum": 2, "exclusiveMinimum": 1}) => json!({"type": "integer", "exclusiveMaximum": 2, "exclusiveMinimum": 1}))]
-    #[test_case(json!({"type": "integer", "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!(false))]
-    #[test_case(json!({"type": "null", "exclusiveMaximum": 2, "exclusiveMinimum": 1}) => json!({"type": "null", "exclusiveMaximum": 2, "exclusiveMinimum": 1}))]
-    #[test_case(json!({"type": "null", "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!({"type": "null", "exclusiveMaximum": 1, "exclusiveMinimum": 2}))]
-    #[test_case(json!({"type": "number", "exclusiveMaximum": 2, "exclusiveMinimum": 1}) => json!({"type": "number", "exclusiveMaximum": 2, "exclusiveMinimum": 1}))]
-    #[test_case(json!({"type": "number", "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!(false))]
-    #[test_case(json!({"type": ["integer", "null"], "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!({"type": "null"}))]
-    #[test_case(json!({"type": ["null", "number"], "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!({"type": "null"}))]
-    #[test_case(json!({"type": ["integer", "null", "number"], "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!({"type": "null"}))]
-    #[test_case(json!({"type": ["integer", "number"], "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!(false))]
-    fn test_update_exclusive_maximum_minimum(value: Value) -> Value {
-        test(update_exclusive_maximum_minimum, value)
+    #[test_case(&json!({"type": "integer", "exclusiveMaximum": 2, "exclusiveMinimum": 1}) => json!({"type": "integer", "exclusiveMaximum": 2, "exclusiveMinimum": 1}))]
+    #[test_case(&json!({"type": "integer", "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!(false))]
+    #[test_case(&json!({"type": "null", "exclusiveMaximum": 2, "exclusiveMinimum": 1}) => json!({"type": "null", "exclusiveMaximum": 2, "exclusiveMinimum": 1}))]
+    #[test_case(&json!({"type": "null", "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!({"type": "null", "exclusiveMaximum": 1, "exclusiveMinimum": 2}))]
+    #[test_case(&json!({"type": "number", "exclusiveMaximum": 2, "exclusiveMinimum": 1}) => json!({"type": "number", "exclusiveMaximum": 2, "exclusiveMinimum": 1}))]
+    #[test_case(&json!({"type": "number", "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!(false))]
+    #[test_case(&json!({"type": ["integer", "null"], "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!({"type": "null"}))]
+    #[test_case(&json!({"type": ["null", "number"], "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!({"type": "null"}))]
+    #[test_case(&json!({"type": ["integer", "null", "number"], "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!({"type": "null"}))]
+    #[test_case(&json!({"type": ["integer", "number"], "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!(false))]
+    fn test_update_exclusive_maximum_minimum(schema: &Value) -> Value {
+        test(update_exclusive_maximum_minimum, schema)
     }
 
-    #[test_case(json!({"type": "array", "maxItems": 2, "minItems": 1}) => json!({"type": "array", "maxItems": 2, "minItems": 1}))]
-    #[test_case(json!({"type": "array", "maxItems": 1, "minItems": 2}) => json!(false))]
-    #[test_case(json!({"type": "null", "maxItems": 2, "minItems": 1}) => json!({"type": "null", "maxItems": 2, "minItems": 1}))]
-    #[test_case(json!({"type": "null", "maxItems": 1, "minItems": 2}) => json!({"type": "null", "maxItems": 1, "minItems": 2}))]
-    #[test_case(json!({"type": ["array", "null"], "maxItems": 1, "minItems": 2}) => json!({"type": "null"}))]
-    fn test_update_max_min_items(value: Value) -> Value {
-        test(update_max_min_items, value)
+    #[test_case(&json!({"type": "array", "maxItems": 2, "minItems": 1}) => json!({"type": "array", "maxItems": 2, "minItems": 1}))]
+    #[test_case(&json!({"type": "array", "maxItems": 1, "minItems": 2}) => json!(false))]
+    #[test_case(&json!({"type": "null", "maxItems": 2, "minItems": 1}) => json!({"type": "null", "maxItems": 2, "minItems": 1}))]
+    #[test_case(&json!({"type": "null", "maxItems": 1, "minItems": 2}) => json!({"type": "null", "maxItems": 1, "minItems": 2}))]
+    #[test_case(&json!({"type": ["array", "null"], "maxItems": 1, "minItems": 2}) => json!({"type": "null"}))]
+    fn test_update_max_min_items(schema: &Value) -> Value {
+        test(update_max_min_items, schema)
     }
 
-    #[test_case(json!({"type": "null", "maxLength": 2, "minLength": 1}) => json!({"type": "null", "maxLength": 2, "minLength": 1}))]
-    #[test_case(json!({"type": "null", "maxLength": 1, "minLength": 2}) => json!({"type": "null", "maxLength": 1, "minLength": 2}))]
-    #[test_case(json!({"type": "string", "maxLength": 2, "minLength": 1}) => json!({"type": "string", "maxLength": 2, "minLength": 1}))]
-    #[test_case(json!({"type": "string", "maxLength": 1, "minLength": 2}) => json!(false))]
-    #[test_case(json!({"type": ["null", "string"], "maxLength": 1, "minLength": 2}) => json!({"type": "null"}))]
-    fn test_update_max_min_length(value: Value) -> Value {
-        test(update_max_min_length, value)
+    #[test_case(&json!({"type": "null", "maxLength": 2, "minLength": 1}) => json!({"type": "null", "maxLength": 2, "minLength": 1}))]
+    #[test_case(&json!({"type": "null", "maxLength": 1, "minLength": 2}) => json!({"type": "null", "maxLength": 1, "minLength": 2}))]
+    #[test_case(&json!({"type": "string", "maxLength": 2, "minLength": 1}) => json!({"type": "string", "maxLength": 2, "minLength": 1}))]
+    #[test_case(&json!({"type": "string", "maxLength": 1, "minLength": 2}) => json!(false))]
+    #[test_case(&json!({"type": ["null", "string"], "maxLength": 1, "minLength": 2}) => json!({"type": "null"}))]
+    fn test_update_max_min_length(schema: &Value) -> Value {
+        test(update_max_min_length, schema)
     }
 
-    #[test_case(json!({"type": "null", "maxProperties": 2, "minProperties": 1}) => json!({"type": "null", "maxProperties": 2, "minProperties": 1}))]
-    #[test_case(json!({"type": "null", "maxProperties": 1, "minProperties": 2}) => json!({"type": "null", "maxProperties": 1, "minProperties": 2}))]
-    #[test_case(json!({"type": "object", "maxProperties": 2, "minProperties": 1}) => json!({"type": "object", "maxProperties": 2, "minProperties": 1}))]
-    #[test_case(json!({"type": "object", "maxProperties": 1, "minProperties": 2}) => json!(false))]
-    #[test_case(json!({"type": ["null", "object"], "maxProperties": 1, "minProperties": 2}) => json!({"type": "null"}))]
-    fn test_update_max_min_properties(value: Value) -> Value {
-        test(update_max_min_properties, value)
+    #[test_case(&json!({"type": "null", "maxProperties": 2, "minProperties": 1}) => json!({"type": "null", "maxProperties": 2, "minProperties": 1}))]
+    #[test_case(&json!({"type": "null", "maxProperties": 1, "minProperties": 2}) => json!({"type": "null", "maxProperties": 1, "minProperties": 2}))]
+    #[test_case(&json!({"type": "object", "maxProperties": 2, "minProperties": 1}) => json!({"type": "object", "maxProperties": 2, "minProperties": 1}))]
+    #[test_case(&json!({"type": "object", "maxProperties": 1, "minProperties": 2}) => json!(false))]
+    #[test_case(&json!({"type": ["null", "object"], "maxProperties": 1, "minProperties": 2}) => json!({"type": "null"}))]
+    fn test_update_max_min_properties(schema: &Value) -> Value {
+        test(update_max_min_properties, schema)
     }
 
-    #[test_case(json!({"type": "integer", "maximum": 2, "minimum": 1}) => json!({"type": "integer", "maximum": 2, "minimum": 1}))]
-    #[test_case(json!({"type": "integer", "maximum": 1, "minimum": 2}) => json!(false))]
-    #[test_case(json!({"type": "null", "maximum": 2, "minimum": 1}) => json!({"type": "null", "maximum": 2, "minimum": 1}))]
-    #[test_case(json!({"type": "null", "maximum": 1, "minimum": 2}) => json!({"type": "null", "maximum": 1, "minimum": 2}))]
-    #[test_case(json!({"type": "number", "maximum": 2, "minimum": 1}) => json!({"type": "number", "maximum": 2, "minimum": 1}))]
-    #[test_case(json!({"type": "number", "maximum": 1, "minimum": 2}) => json!(false))]
-    #[test_case(json!({"type": ["integer", "null"], "maximum": 1, "minimum": 2}) => json!({"type": "null"}))]
-    #[test_case(json!({"type": ["null", "number"], "maximum": 1, "minimum": 2}) => json!({"type": "null"}))]
-    #[test_case(json!({"type": ["integer", "null", "number"], "maximum": 1, "minimum": 2}) => json!({"type": "null"}))]
-    #[test_case(json!({"type": ["integer", "number"], "maximum": 1, "minimum": 2}) => json!(false))]
-    fn test_update_maximum_minimum(value: Value) -> Value {
-        test(update_maximum_minimum, value)
+    #[test_case(&json!({"type": "integer", "maximum": 2, "minimum": 1}) => json!({"type": "integer", "maximum": 2, "minimum": 1}))]
+    #[test_case(&json!({"type": "integer", "maximum": 1, "minimum": 2}) => json!(false))]
+    #[test_case(&json!({"type": "null", "maximum": 2, "minimum": 1}) => json!({"type": "null", "maximum": 2, "minimum": 1}))]
+    #[test_case(&json!({"type": "null", "maximum": 1, "minimum": 2}) => json!({"type": "null", "maximum": 1, "minimum": 2}))]
+    #[test_case(&json!({"type": "number", "maximum": 2, "minimum": 1}) => json!({"type": "number", "maximum": 2, "minimum": 1}))]
+    #[test_case(&json!({"type": "number", "maximum": 1, "minimum": 2}) => json!(false))]
+    #[test_case(&json!({"type": ["integer", "null"], "maximum": 1, "minimum": 2}) => json!({"type": "null"}))]
+    #[test_case(&json!({"type": ["null", "number"], "maximum": 1, "minimum": 2}) => json!({"type": "null"}))]
+    #[test_case(&json!({"type": ["integer", "null", "number"], "maximum": 1, "minimum": 2}) => json!({"type": "null"}))]
+    #[test_case(&json!({"type": ["integer", "number"], "maximum": 1, "minimum": 2}) => json!(false))]
+    fn test_update_maximum_minimum(schema: &Value) -> Value {
+        test(update_maximum_minimum, schema)
     }
 
     // Ensure that impossible schemas are not modified if type is not defined
-    #[test_case(json!(false))]
-    #[test_case(json!(null))]
-    #[test_case(json!(true))]
-    #[test_case(json!({}))]
-    #[test_case(json!({"exclusiveMaximum": 1, "exclusiveMinimum": 2}))]
-    #[test_case(json!({"exclusiveMaximum": 2, "exclusiveMinimum": 1}))]
-    #[test_case(json!({"maxItems": 1, "minItems": 2}))]
-    #[test_case(json!({"maxItems": 2, "minItems": 1}))]
-    #[test_case(json!({"maxLength": 1, "minLength": 2}))]
-    #[test_case(json!({"maxLength": 2, "minLength": 1}))]
-    #[test_case(json!({"maxProperties": 1, "minProperties": 2}))]
-    #[test_case(json!({"maxProperties": 2, "minProperties": 1}))]
-    #[test_case(json!({"maximum": 1, "minimum": 2}))]
-    #[test_case(json!({"maximum": 2, "minimum": 1}))]
+    #[test_case(&json!(false))]
+    #[test_case(&json!(null))]
+    #[test_case(&json!(true))]
+    #[test_case(&json!({}))]
+    #[test_case(&json!({"exclusiveMaximum": 1, "exclusiveMinimum": 2}))]
+    #[test_case(&json!({"exclusiveMaximum": 2, "exclusiveMinimum": 1}))]
+    #[test_case(&json!({"maxItems": 1, "minItems": 2}))]
+    #[test_case(&json!({"maxItems": 2, "minItems": 1}))]
+    #[test_case(&json!({"maxLength": 1, "minLength": 2}))]
+    #[test_case(&json!({"maxLength": 2, "minLength": 1}))]
+    #[test_case(&json!({"maxProperties": 1, "minProperties": 2}))]
+    #[test_case(&json!({"maxProperties": 2, "minProperties": 1}))]
+    #[test_case(&json!({"maximum": 1, "minimum": 2}))]
+    #[test_case(&json!({"maximum": 2, "minimum": 1}))]
     // Ensure that incongruent keywords are not modified if not associated to available types
-    #[test_case(json!({"type": "null", "exclusiveMaximum": 1, "exclusiveMinimum": 2}))]
-    #[test_case(json!({"type": "null", "exclusiveMaximum": 2, "exclusiveMinimum": 1}))]
-    #[test_case(json!({"type": "null", "maxItems": 1, "minItems": 2}))]
-    #[test_case(json!({"type": "null", "maxItems": 2, "minItems": 1}))]
-    #[test_case(json!({"type": "null", "maxLength": 1, "minLength": 2}))]
-    #[test_case(json!({"type": "null", "maxLength": 2, "minLength": 1}))]
-    #[test_case(json!({"type": "null", "maxProperties": 1, "minProperties": 2}))]
-    #[test_case(json!({"type": "null", "maxProperties": 2, "minProperties": 1}))]
-    #[test_case(json!({"type": "null", "maximum": 1, "minimum": 2}))]
-    #[test_case(json!({"type": "null", "maximum": 2, "minimum": 1}))]
+    #[test_case(&json!({"type": "null", "exclusiveMaximum": 1, "exclusiveMinimum": 2}))]
+    #[test_case(&json!({"type": "null", "exclusiveMaximum": 2, "exclusiveMinimum": 1}))]
+    #[test_case(&json!({"type": "null", "maxItems": 1, "minItems": 2}))]
+    #[test_case(&json!({"type": "null", "maxItems": 2, "minItems": 1}))]
+    #[test_case(&json!({"type": "null", "maxLength": 1, "minLength": 2}))]
+    #[test_case(&json!({"type": "null", "maxLength": 2, "minLength": 1}))]
+    #[test_case(&json!({"type": "null", "maxProperties": 1, "minProperties": 2}))]
+    #[test_case(&json!({"type": "null", "maxProperties": 2, "minProperties": 1}))]
+    #[test_case(&json!({"type": "null", "maximum": 1, "minimum": 2}))]
+    #[test_case(&json!({"type": "null", "maximum": 2, "minimum": 1}))]
     fn test_update_max_min_related_keywords_does_not_perform_modifications_if_missing_or_incongruent_type(
-        mut value: Value,
+        schema: &Value,
     ) {
-        crate::init_logger();
-        let initial_value = value.clone();
-        assert!(!update_max_min_related_keywords(&mut value));
-        assert_eq!(initial_value, value);
+        let _ = crate::base_test_keyword_processor(&update_max_min_related_keywords, schema);
     }
 
     // Become a false schema as only the incongruent type is allowed
-    #[test_case(json!({"type": "integer", "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!(false))]
-    #[test_case(json!({"type": "number", "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!(false))]
-    #[test_case(json!({"type": ["integer", "number"], "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!(false))]
-    #[test_case(json!({"type": "array", "maxItems": 1, "minItems": 2}) => json!(false))]
-    #[test_case(json!({"type": "string", "maxLength": 1, "minLength": 2}) => json!(false))]
-    #[test_case(json!({"type": "object", "maxProperties": 1, "minProperties": 2}) => json!(false))]
-    #[test_case(json!({"type": "integer", "maximum": 1, "minimum": 2}) => json!(false))]
-    #[test_case(json!({"type": "number", "maximum": 1, "minimum": 2}) => json!(false))]
-    #[test_case(json!({"type": ["integer", "number"], "maximum": 1, "minimum": 2}) => json!(false))]
+    #[test_case(&json!({"type": "integer", "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!(false))]
+    #[test_case(&json!({"type": "number", "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!(false))]
+    #[test_case(&json!({"type": ["integer", "number"], "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!(false))]
+    #[test_case(&json!({"type": "array", "maxItems": 1, "minItems": 2}) => json!(false))]
+    #[test_case(&json!({"type": "string", "maxLength": 1, "minLength": 2}) => json!(false))]
+    #[test_case(&json!({"type": "object", "maxProperties": 1, "minProperties": 2}) => json!(false))]
+    #[test_case(&json!({"type": "integer", "maximum": 1, "minimum": 2}) => json!(false))]
+    #[test_case(&json!({"type": "number", "maximum": 1, "minimum": 2}) => json!(false))]
+    #[test_case(&json!({"type": ["integer", "number"], "maximum": 1, "minimum": 2}) => json!(false))]
     // // The incongruent primitive type is removed)
-    #[test_case(json!({"type": ["integer", "null"], "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!({"type": "null"}))]
-    #[test_case(json!({"type": ["null", "number"], "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!({"type": "null"}))]
-    #[test_case(json!({"type": ["array", "null"], "maxItems": 1, "minItems": 2}) => json!({"type": "null"}))]
-    #[test_case(json!({"type": ["null", "string"], "maxLength": 1, "minLength": 2}) => json!({"type": "null"}))]
-    #[test_case(json!({"type": ["null", "object"], "maxProperties": 1, "minProperties": 2}) => json!({"type": "null"}))]
-    #[test_case(json!({"type": ["integer", "null"], "maximum": 1, "minimum": 2}) => json!({"type": "null"}))]
-    #[test_case(json!({"type": ["null", "number"], "maximum": 1, "minimum": 2}) => json!({"type": "null"}))]
-    fn test_update_max_min_related_keywords_does_performs_modifications(mut value: Value) -> Value {
-        crate::init_logger();
-        assert!(update_max_min_related_keywords(&mut value));
-        value
+    #[test_case(&json!({"type": ["integer", "null"], "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!({"type": "null"}))]
+    #[test_case(&json!({"type": ["null", "number"], "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!({"type": "null"}))]
+    #[test_case(&json!({"type": ["array", "null"], "maxItems": 1, "minItems": 2}) => json!({"type": "null"}))]
+    #[test_case(&json!({"type": ["null", "string"], "maxLength": 1, "minLength": 2}) => json!({"type": "null"}))]
+    #[test_case(&json!({"type": ["null", "object"], "maxProperties": 1, "minProperties": 2}) => json!({"type": "null"}))]
+    #[test_case(&json!({"type": ["integer", "null"], "maximum": 1, "minimum": 2}) => json!({"type": "null"}))]
+    #[test_case(&json!({"type": ["null", "number"], "maximum": 1, "minimum": 2}) => json!({"type": "null"}))]
+    fn test_update_max_min_related_keywords_does_performs_modifications(schema: &Value) -> Value {
+        crate::base_test_keyword_processor(&update_max_min_related_keywords, schema)
     }
 }

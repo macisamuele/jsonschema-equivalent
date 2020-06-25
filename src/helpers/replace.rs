@@ -60,8 +60,8 @@ pub(crate) fn type_with(
         }
         Entry::Occupied(mut entry) => {
             if let Some(json_primitive_types) = primitive_types.to_schema_value() {
-                let previous_value = entry.insert(json_primitive_types);
-                primitive_types != PrimitiveTypesBitMap::from_schema_value(Some(&previous_value))
+                let previous_value = entry.insert(json_primitive_types.clone());
+                previous_value != json_primitive_types
             } else {
                 let _ = entry.remove();
                 true
@@ -112,7 +112,7 @@ mod tests {
     #[test_case(json!({}), bit_map!(PrimitiveType::Boolean), true => json!({"type": "boolean"}))]
     #[test_case(json!({"type": "null"}), bit_map!(PrimitiveType::Null), false => json!({"type": "null"}))]
     #[test_case(json!({"type": "object"}), bit_map!(PrimitiveType::Null, PrimitiveType::Object), true => json!({"type": ["null", "object"]}))]
-    #[test_case(json!({"type": ["string", "object"]}), bit_map!(PrimitiveType::Object, PrimitiveType::String), false => json!({"type": ["object", "string"]}))]
+    #[test_case(json!({"type": ["string", "object"]}), bit_map!(PrimitiveType::Object, PrimitiveType::String), true => json!({"type": ["object", "string"]}))]
     #[test_case(json!({"type": "number"}), bit_map!(PrimitiveType::Integer), true => json!({"type": "integer"}))]
     // All primitive types case
     #[test_case(json!({}), bit_map!(PrimitiveType::Array, PrimitiveType::Boolean, PrimitiveType::Integer, PrimitiveType::Null, PrimitiveType::Number, PrimitiveType::Object, PrimitiveType::String), false => json!({}))]

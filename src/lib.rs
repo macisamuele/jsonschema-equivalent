@@ -116,6 +116,18 @@ pub(crate) fn init_logger() {
 }
 
 #[cfg(test)]
+pub(crate) fn base_test_keyword_processor(
+    keyword_processing_method: &dyn Fn(&mut Value) -> bool,
+    schema: &Value,
+) -> Value {
+    init_logger();
+    let mut processed_schema: Value = schema.clone();
+    let is_schema_updated = keyword_processing_method(&mut processed_schema);
+    assert_eq!(is_schema_updated, schema != &processed_schema);
+    processed_schema
+}
+
+#[cfg(test)]
 mod tests {
     use super::{jsonschema_equivalent, jsonschema_equivalent_ref};
     use serde_json::{json, Value};

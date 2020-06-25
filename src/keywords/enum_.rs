@@ -68,14 +68,12 @@ mod tests {
     use serde_json::{json, Value};
     use test_case::test_case;
 
-    #[test_case(json!({}) => json!({}))]
-    #[test_case(json!({"enum": []}) => json!({"enum": []}))]
-    #[test_case(json!({"enum": [1], "type": "string"}) => json!(false))]
-    #[test_case(json!({"enum": ["0", "1", 2], "type": "string"}) => json!({"enum": ["0", "1"], "type": "string"}))]
-    #[test_case(json!({"enum": [3, 4, 5], "type": "string"}) => json!(false))]
-    fn test_remove_extraneous_keys_keyword_type_does_remove_keys(mut schema: Value) -> Value {
-        crate::init_logger();
-        let _ = simple_enum_cleanup(&mut schema);
-        schema
+    #[test_case(&json!({}) => json!({}))]
+    #[test_case(&json!({"enum": []}) => json!({"enum": []}))]
+    #[test_case(&json!({"enum": [1], "type": "string"}) => json!(false))]
+    #[test_case(&json!({"enum": ["0", "1", 2], "type": "string"}) => json!({"enum": ["0", "1"], "type": "string"}))]
+    #[test_case(&json!({"enum": [3, 4, 5], "type": "string"}) => json!(false))]
+    fn test_remove_extraneous_keys_keyword_type_does_remove_keys(schema: &Value) -> Value {
+        crate::base_test_keyword_processor(&simple_enum_cleanup, schema)
     }
 }

@@ -22,12 +22,10 @@ mod tests {
     use serde_json::{json, Value};
     use test_case::test_case;
 
-    #[test_case(json!({}) => json!({}))]
-    #[test_case(json!({"required": []}) => json!({}))]
-    #[test_case(json!({"required": ["key"]}) => json!({"required": ["key"]}))]
-    fn test_remove_empty_required(mut schema: Value) -> Value {
-        crate::init_logger();
-        let _ = remove_empty_required(&mut schema);
-        schema
+    #[test_case(&json!({}) => json!({}))]
+    #[test_case(&json!({"required": []}) => json!({}))]
+    #[test_case(&json!({"required": ["key"]}) => json!({"required": ["key"]}))]
+    fn test_remove_empty_required(schema: &Value) -> Value {
+        crate::base_test_keyword_processor(&remove_empty_required, schema)
     }
 }
