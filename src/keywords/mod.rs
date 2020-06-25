@@ -20,11 +20,16 @@ use serde_json::Value;
 /// library so please be mindfull before modifying the order (and if you
 /// do so please motivate it in the pull request description)
 static UPDATE_SCHEMA_METHODS: &[fn(&mut Value) -> bool] = &[
-    macro_::maximum_minimum_related_keywords::update_max_min_related_keywords,
+    // `remove_extraneous_keys_keyword_type` and `remove_keywords_in_must_ignore_groups`
+    // is added first as it quickly reduces the amount of keywords to process
+    type_::remove_extraneous_keys_keyword_type,
+    macro_::ignore_keywords::remove_keywords_in_must_ignore_groups,
+    // All others, currently no special ordering is defined
+    additional_properties::remove_empty_additional_properties,
     const_::simple_const_cleanup,
     enum_::simple_enum_cleanup,
+    macro_::maximum_minimum_related_keywords::update_max_min_related_keywords,
     property_names::optimise_property_names,
-    additional_properties::remove_empty_additional_properties,
     required::remove_empty_required,
     type_::optimise_keyword_type,
     type_::remove_extraneous_keys_keyword_type,
