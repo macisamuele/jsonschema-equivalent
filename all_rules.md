@@ -23,6 +23,12 @@
 | `{"additionalItems": false, "items": {"type": "string"}}` | `{"items": {"type": "string"}}` | `additionalItems` is meaningless if `items` is not having an array of schemas |
 | `{"additionalProperties": {}}` | `true` | `additionalProperties` keyword has no effect on empty schema |
 | `{"additionalProperties": true}` | `true` | `additionalProperties` keyword has no effect on `true` schema |
+| `{"allOf": [{"type": "boolean"}, {"type": "number"}]}` | `false` | `allOf` without common types results into a `false` schema |
+| `{"allOf": [{"type": "integer"}, {"type": "number"}]}` | `{"type": "integer"}` | only common types survive on `allOf` |
+| `{"allOf": [{"type": "integer"}], "type": "boolean"}` | `false` | `allOf` without common types (considering the parent-schema types) results into a `false` schema |
+| `{"allOf": [{"type": ["boolean", "integer"]}, {"type": "number"}]}` | `{"type": "integer"}` | only common types survive on `allOf` |
+| `{"allOf": [false], "type": "object"}` | `false` | `false` schema in `allOf` keyword results into a `false` schema |
+| `{"allOf": [true], "type": "object"}` | `{"type": "object"}` | `true` schema in `allOf` does not add restrictions, so it can be removed |
 | `{"const": "some-text", "type": "array"}` | `false` | Incongruent types between `const` value and defined type make the schema a `false` schema |
 | `{"enum": ["some-text", 1], "type": "string"}` | `{"enum": ["some-text"], "type": "string"}` | Enum values that cannot be valid according to the schema are elided |
 | `{"enum": [1], "type": "string"}` | `false` | No `enum` value can be valid against the schema, so it results into a `false` schema |
@@ -45,11 +51,4 @@
 | `{"minLength": 1, "type": "number"}` | `{"type": "number"}` | `minLength` keyword has no effect on schema with `type` number |
 | `{"minProperties": 0, "type": "object"}` | `{"type": "object"}` | `minProperties` set to 0 has the same effect of not having the keyword defined |
 | `{"minProperties": 1, "propertyNames": false, "type": ["number", "object"]}` | `{"type": "number"}` | `propertyNames` as `false` schema, with the requirement of a property defined in case of `type` object prevents a JSON object to ever be valid |
-| `{"propertyNames": {"minLength": 1, "minimum": 1}, "type": "object"}` | `{"propertyNames": {"minLength": 1, "type": "string"}, "type": "object"}` | `propertyNames` must be of `type` string, so all keywords extraneous for the `type` to that have no influence |
-| `{"propertyNames": {"minLength": 1}, "type": "number"}` | `{"type": "number"}` | `propertyNames` adds no restriction if JSON objects are not allowed |
-| `{"required": []}` | `true` | `required` keyword has no effect on empty list |
-| `{"type": ["number", "integer"]}` | `{"type": "number"}` | `type` keyword containing `number` and `integer` is as effective as only containing number |
-| `1` | `1` | A non schema passses untouched |
-| `false` | `false` | A boolean schema passes untouched (2) |
-| `true` | `true` | A boolean schema passes untouched (1) |
 <!-- TABLE END -->

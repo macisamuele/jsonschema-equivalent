@@ -5,7 +5,6 @@ use serde_json::{map::Entry, Map, Value};
 use std::ops::Deref;
 use std::ops::DerefMut;
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub(crate) enum IntersectStatus<'s> {
     /// The updated `schema` fully includes the JSON Schema limitations imposed by `other_schema`
@@ -80,7 +79,6 @@ fn handle_properties_related_keywords(
 ///     * The method might not be able to merge in `schema` all the restrictions imposed by `other_schema`.
 ///       This might happen because the logic has not been fully implemented yet as well as it is just not possible (`oneOf` for example cannot be merged).
 ///       For this reason you should check if the result is `IntersectStatus::Complete` or `IntersectStatus::Partial`.
-#[allow(dead_code)]
 // The method body is very long, but I do argue that it is very simple to follow and creating helper methods would make understanding even harder
 #[allow(clippy::too_many_lines)]
 pub(crate) fn intersection_schema<'s>(

@@ -2,6 +2,7 @@
 //! <https://tools.ietf.org/html/draft-handrews-json-schema-validation-01>
 mod additional_items;
 mod additional_properties;
+mod all_of;
 mod const_;
 mod enum_;
 mod if_;
@@ -30,6 +31,8 @@ static UPDATE_SCHEMA_METHODS: &[fn(&mut Value) -> bool] = &[
     // All others, currently no special ordering is defined
     additional_items::simplify_additional_items,
     additional_properties::simplify_additional_properties,
+    all_of::flatten_all_of,
+    all_of::simplify_all_of,
     const_::simple_const_cleanup,
     enum_::simple_enum_cleanup,
     if_::simplify_if,
@@ -106,12 +109,10 @@ mod tests {
 
     use test_case::test_case;
 
-    #[test_case(json!({}) => json!(true))]
-    #[test_case(json!({"properties": {"prop": {"type": "string", "minimum": 1}}}) => json!({"properties": {"prop": {"type": "string"}}}))]
-    #[test_case(json!({"allOf": [{"type": "string", "minimum": 1}]}) => json!({"allOf": [{"type": "string"}]}))]
-    fn test_update_schema_descend_schema(mut schema: Value) -> Value {
-        crate::init_logger();
-        let _ = update_schema(&mut schema);
-        schema
+    #[test_case(&json!({}) => json!(true))]
+    #[test_case(&json!({"properties": {"prop": {"type": "string", "minimum": 1}}}) => json!({"properties": {"prop": {"type": "string"}}}))]
+    #[test_case(&json!({"allOf": [{"type": "string", "minimum": 1}]}) => json!({"type": "string"}))]
+    fn test_update_schema_descend_schema(schema: &Value) -> Value {
+        crate::base_test_keyword_processor(&update_schema, schema)
     }
 }

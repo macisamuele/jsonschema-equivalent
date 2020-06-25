@@ -28,7 +28,6 @@ pub(crate) fn with_false_schema(schema: &mut Value) -> bool {
 /// to more memory involved memory-related APIs.
 /// Using `std::mem::replace` ensures that the value stored in `schema` is dropped
 /// once leaving the scope of the method
-#[allow(dead_code)]
 #[inline]
 pub(crate) fn with_true_schema(schema: &mut Value) -> bool {
     if schema == &Value::Bool(true) {

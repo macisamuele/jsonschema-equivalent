@@ -3,11 +3,11 @@ use json_schema_test_suite::{json_schema_test_suite, TestCase};
 use jsonschema::{Draft, JSONSchema};
 use jsonschema_equivalent::jsonschema_equivalent;
 
-#[json_schema_test_suite(
-    "JSON-Schema-Test-Suite", "draft4",
-    {"optional_bignum_0_0", "optional_bignum_2_0"}
-)]
-#[json_schema_test_suite("JSON-Schema-Test-Suite", "draft6")]
+// #[json_schema_test_suite(
+//     "JSON-Schema-Test-Suite", "draft4",
+//     {"optional_bignum_0_0", "optional_bignum_2_0"}
+// )]
+// #[json_schema_test_suite("JSON-Schema-Test-Suite", "draft6")]
 #[json_schema_test_suite(
     "JSON-Schema-Test-Suite", "draft7", 
     {"optional_format_idn_hostname_0_11", "optional_format_idn_hostname_0_6", "optional_format_idn_hostname_0_7"}
@@ -44,7 +44,7 @@ fn draft_test(_server_address: &str, test_case: TestCase) {
 
     assert_eq!(
         original_is_valid, optimised_is_valid,
-        "Optimisation of schema changes the schema constraints. jsonschema_equivalent({}) = {}",
-        test_case.schema, optimised_schema
+        "Optimisation of schema changes the schema constraints. jsonschema_equivalent({}) = {} . Tested instance: {}",
+        test_case.schema, optimised_schema, test_case.instance
     );
 }
