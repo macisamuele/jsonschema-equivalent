@@ -37,6 +37,9 @@
 | `{"maxItems": 1, "minItems": 2, "type": "array"}` | `false` | `maxItems` keyword lower than `minItems` keyword results into a `false` schema |
 | `{"maxLength": 1, "minLength": 2, "type": "string"}` | `false` | `maxLength` keyword lower than `minLength` keyword results into a `false` schema |
 | `{"maxProperties": 1, "minProperties": 2, "type": "object"}` | `false` | `maxProperties` keyword lower than `minProperties` keyword results into a `false` schema |
+| `{"minItems": 0, "type": "array"}` | `{"type": "array"}` | `minItems` set to 0 has the same effect of not having the keyword defined |
+| `{"minLength": 0, "type": "string"}` | `{"type": "string"}` | `minLength` set to 0 has the same effect of not having the keyword defined |
+| `{"minProperties": 0, "type": "object"}` | `{"type": "object"}` | `minProperties` set to 0 has the same effect of not having the keyword defined |
 | `{"maxItems": 2, "minItems": 1, "type": "integer"}` | `{"type": "integer"}` | Extraneous `*max*`, `*min*` keywords are removed (if not matching with type) |
 | `{"maxItems": 1, "minItems": 2, "type": ["integer", "array"]}` | `{"type": "integer"}` | If `*max*`, `*min*` keywords are creating an impossible range then the corresponding `type` is removed |
 | `{"minimum": 1, "type": "array"}` | `{"type": "array"}` | `minimum` keyword has no effect on schema with `type` array |

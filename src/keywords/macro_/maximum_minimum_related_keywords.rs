@@ -9,28 +9,21 @@ use serde_json::Value;
 /// after they have verified and decided that incongruent keywords are found
 fn cleanup_incongruent_keywords(
     schema: &mut Value,
-    schema_primitive_types: PrimitiveTypesBitMap,
-    primitive_type_to_remove: PrimitiveType,
+    schema_primitive_types: &mut PrimitiveTypesBitMap,
+    primitive_types_to_remove: PrimitiveTypesBitMap,
     keywords_to_remove: &[&str],
 ) -> bool {
-    if schema_primitive_types.has_other_primitive_types_other_than(primitive_type_to_remove) {
-        let mut final_primitive_types = schema_primitive_types;
-        final_primitive_types.remove(primitive_type_to_remove);
-        if let Value::Object(schema_object) = schema {
-            if replace::type_with(schema_object, final_primitive_types) {
-                for keyword_to_remove in keywords_to_remove {
-                    let _ = schema_object.remove(*keyword_to_remove);
-                }
-                true
-            } else {
-                false
-            }
-        } else {
-            // This is impossible as we know that `schema` is a JSON Object because we were able to extract keywords
-            false
-        }
-    } else {
+    schema_primitive_types.remove_all(primitive_types_to_remove);
+    if schema_primitive_types.is_empty() {
         replace::with_false_schema(schema)
+    } else if let Value::Object(schema_object) = schema {
+        let mut updated_schema = false;
+        for keyword_to_remove in keywords_to_remove {
+            updated_schema |= schema_object.remove(*keyword_to_remove).is_some();
+        }
+        updated_schema
+    } else {
+        false
     }
 }
 /// Update schema with incongruent `exclusiveMaximum` and `exclusiveMinimum`.
@@ -39,18 +32,18 @@ fn cleanup_incongruent_keywords(
 #[log_processing(cfg(feature = "logging"))]
 fn update_exclusive_maximum_minimum(
     schema: &mut Value,
-    schema_primitive_types: &PrimitiveTypesBitMap,
+    schema_primitive_types: &mut PrimitiveTypesBitMap,
 ) -> bool {
     // Checking for PrimitiveType::Integer only as PrimitiveType::Number will include integer as well
     if schema_primitive_types.contains(PrimitiveType::Integer) {
         match (
-            schema.get("exclusiveMaximum").map(Value::as_f64),
-            schema.get("exclusiveMinimum").map(Value::as_f64),
+            schema.get("exclusiveMaximum").and_then(Value::as_f64),
+            schema.get("exclusiveMinimum").and_then(Value::as_f64),
         ) {
             (Some(max_), Some(min_)) if max_ < min_ => cleanup_incongruent_keywords(
                 schema,
-                *schema_primitive_types,
-                PrimitiveType::Number,
+                schema_primitive_types,
+                PrimitiveTypesBitMap::from(&[PrimitiveType::Integer, PrimitiveType::Number]),
                 &["exclusiveMaximum", "exclusiveMinimum"],
             ),
             _ => false,
@@ -64,18 +57,29 @@ fn update_exclusive_maximum_minimum(
 /// Replaces the schema with `false` schema if `maxItems`
 /// is smaller than `minItems`
 #[log_processing(cfg(feature = "logging"))]
-fn update_max_min_items(schema: &mut Value, schema_primitive_types: &PrimitiveTypesBitMap) -> bool {
+fn update_max_min_items(
+    schema: &mut Value,
+    schema_primitive_types: &mut PrimitiveTypesBitMap,
+) -> bool {
     if schema_primitive_types.contains(PrimitiveType::Array) {
         match (
-            schema.get("maxItems").map(Value::as_f64),
-            schema.get("minItems").map(Value::as_f64),
+            schema.get("maxItems").and_then(Value::as_f64),
+            schema.get("minItems").and_then(Value::as_f64),
         ) {
             (Some(max_), Some(min_)) if max_ < min_ => cleanup_incongruent_keywords(
                 schema,
-                *schema_primitive_types,
-                PrimitiveType::Array,
+                schema_primitive_types,
+                PrimitiveTypesBitMap::from(PrimitiveType::Array),
                 &["maxItems", "minItems"],
             ),
+            (_, Some(min_)) if min_ <= 0. => {
+                if let Value::Object(schema_object) = schema {
+                    let _ = schema_object.remove("minItems");
+                    true
+                } else {
+                    false
+                }
+            }
             _ => false,
         }
     } else {
@@ -89,19 +93,27 @@ fn update_max_min_items(schema: &mut Value, schema_primitive_types: &PrimitiveTy
 #[log_processing(cfg(feature = "logging"))]
 fn update_max_min_length(
     schema: &mut Value,
-    schema_primitive_types: &PrimitiveTypesBitMap,
+    schema_primitive_types: &mut PrimitiveTypesBitMap,
 ) -> bool {
     if schema_primitive_types.contains(PrimitiveType::String) {
         match (
-            schema.get("maxLength").map(Value::as_f64),
-            schema.get("minLength").map(Value::as_f64),
+            schema.get("maxLength").and_then(Value::as_f64),
+            schema.get("minLength").and_then(Value::as_f64),
         ) {
             (Some(max_), Some(min_)) if max_ < min_ => cleanup_incongruent_keywords(
                 schema,
-                *schema_primitive_types,
-                PrimitiveType::String,
+                schema_primitive_types,
+                PrimitiveTypesBitMap::from(PrimitiveType::String),
                 &["maxLength", "minLength"],
             ),
+            (_, Some(min_)) if min_ <= 0. => {
+                if let Value::Object(schema_object) = schema {
+                    let _ = schema_object.remove("minLength");
+                    true
+                } else {
+                    false
+                }
+            }
             _ => false,
         }
     } else {
@@ -115,19 +127,27 @@ fn update_max_min_length(
 #[log_processing(cfg(feature = "logging"))]
 fn update_max_min_properties(
     schema: &mut Value,
-    schema_primitive_types: &PrimitiveTypesBitMap,
+    schema_primitive_types: &mut PrimitiveTypesBitMap,
 ) -> bool {
     if schema_primitive_types.contains(PrimitiveType::Object) {
         match (
-            schema.get("maxProperties").map(Value::as_f64),
-            schema.get("minProperties").map(Value::as_f64),
+            schema.get("maxProperties").and_then(Value::as_f64),
+            schema.get("minProperties").and_then(Value::as_f64),
         ) {
             (Some(max_), Some(min_)) if max_ < min_ => cleanup_incongruent_keywords(
                 schema,
-                *schema_primitive_types,
-                PrimitiveType::Object,
+                schema_primitive_types,
+                PrimitiveType::Object.into(),
                 &["maxProperties", "minProperties"],
             ),
+            (_, Some(min_)) if min_ <= 0. => {
+                if let Value::Object(schema_object) = schema {
+                    let _ = schema_object.remove("minProperties");
+                    true
+                } else {
+                    false
+                }
+            }
             _ => false,
         }
     } else {
@@ -141,18 +161,18 @@ fn update_max_min_properties(
 #[log_processing(cfg(feature = "logging"))]
 fn update_maximum_minimum(
     schema: &mut Value,
-    schema_primitive_types: &PrimitiveTypesBitMap,
+    schema_primitive_types: &mut PrimitiveTypesBitMap,
 ) -> bool {
     // Checking for PrimitiveType::Integer only as PrimitiveType::Number will include integer as well
     if schema_primitive_types.contains(PrimitiveType::Integer) {
         match (
-            schema.get("maximum").map(Value::as_f64),
-            schema.get("minimum").map(Value::as_f64),
+            schema.get("maximum").and_then(Value::as_f64),
+            schema.get("minimum").and_then(Value::as_f64),
         ) {
             (Some(max_), Some(min_)) if max_ < min_ => cleanup_incongruent_keywords(
                 schema,
-                *schema_primitive_types,
-                PrimitiveType::Number,
+                schema_primitive_types,
+                PrimitiveTypesBitMap::from(&[PrimitiveType::Integer, PrimitiveType::Number]),
                 &["maximum", "minimum"],
             ),
             _ => false,
@@ -170,21 +190,21 @@ fn update_maximum_minimum(
 #[log_processing(cfg(feature = "logging"))]
 pub(crate) fn update_max_min_related_keywords(schema: &mut Value) -> bool {
     let mut updated_schema = false;
-    // We're applying the keyword updates only if `type` keyword is present because
-    // `[1, 2, 3]` would be valid against a schema like
-    // `{"maximum": 1, "minimum": 2, "minItems": 1}`
-    // NOTE: By ensuring the presence of type we're also ensuring that schema is a JSON object as well
-    if schema.get("type").is_some() {
-        let schema_primitive_types = PrimitiveTypesBitMap::from_schema(schema);
+    let mut schema_primitive_types = PrimitiveTypesBitMap::from_schema(schema);
 
-        for method in &[
-            update_max_min_items,
-            update_max_min_length,
-            update_max_min_properties,
-            update_exclusive_maximum_minimum,
-            update_maximum_minimum,
-        ] {
-            updated_schema |= method(schema, &schema_primitive_types);
+    for method in &[
+        update_max_min_items,
+        update_max_min_length,
+        update_max_min_properties,
+        update_exclusive_maximum_minimum,
+        update_maximum_minimum,
+    ] {
+        updated_schema |= method(schema, &mut schema_primitive_types);
+    }
+
+    if updated_schema {
+        if let Value::Object(schema_object) = schema {
+            let _ = replace::type_with(schema_object, schema_primitive_types);
         }
     }
     updated_schema
@@ -196,18 +216,26 @@ mod tests {
         update_exclusive_maximum_minimum, update_max_min_items, update_max_min_length,
         update_max_min_properties, update_max_min_related_keywords, update_maximum_minimum,
     };
-    use crate::helpers::types::PrimitiveTypesBitMap;
+    use crate::helpers::{replace, types::PrimitiveTypesBitMap};
 
     use serde_json::{json, Value};
     use test_case::test_case;
 
     fn test(
-        keyword_update_logic: fn(&mut Value, &PrimitiveTypesBitMap) -> bool,
+        keyword_update_logic: fn(&mut Value, &mut PrimitiveTypesBitMap) -> bool,
         schema: &Value,
     ) -> Value {
-        let schema_primitive_types = PrimitiveTypesBitMap::from_schema(schema);
         crate::base_test_keyword_processor(
-            &|schema| keyword_update_logic(schema, &schema_primitive_types),
+            &|schema| {
+                let mut schema_primitive_types = PrimitiveTypesBitMap::from_schema(schema);
+                let r = keyword_update_logic(schema, &mut schema_primitive_types);
+                if let Value::Object(schema_object) = schema {
+                    // Do it in the test as the tested methods are only a part of the overall
+                    // `update_max_min_related_keywords` and it would perform this operation.
+                    let _ = replace::type_with(schema_object, schema_primitive_types);
+                }
+                r
+            },
             schema,
         )
     }
@@ -231,6 +259,8 @@ mod tests {
     #[test_case(&json!({"type": "null", "maxItems": 2, "minItems": 1}) => json!({"type": "null", "maxItems": 2, "minItems": 1}))]
     #[test_case(&json!({"type": "null", "maxItems": 1, "minItems": 2}) => json!({"type": "null", "maxItems": 1, "minItems": 2}))]
     #[test_case(&json!({"type": ["array", "null"], "maxItems": 1, "minItems": 2}) => json!({"type": "null"}))]
+    #[test_case(&json!({"type": "array", "minItems": 0}) => json!({"type": "array"}))]
+    #[test_case(&json!({"minItems": 0}) => json!({}))]
     fn test_update_max_min_items(schema: &Value) -> Value {
         test(update_max_min_items, schema)
     }
@@ -240,6 +270,8 @@ mod tests {
     #[test_case(&json!({"type": "string", "maxLength": 2, "minLength": 1}) => json!({"type": "string", "maxLength": 2, "minLength": 1}))]
     #[test_case(&json!({"type": "string", "maxLength": 1, "minLength": 2}) => json!(false))]
     #[test_case(&json!({"type": ["null", "string"], "maxLength": 1, "minLength": 2}) => json!({"type": "null"}))]
+    #[test_case(&json!({"type": "string", "minLength": 0}) => json!({"type": "string"}))]
+    #[test_case(&json!({"minLength": 0}) => json!({}))]
     fn test_update_max_min_length(schema: &Value) -> Value {
         test(update_max_min_length, schema)
     }
@@ -249,6 +281,8 @@ mod tests {
     #[test_case(&json!({"type": "object", "maxProperties": 2, "minProperties": 1}) => json!({"type": "object", "maxProperties": 2, "minProperties": 1}))]
     #[test_case(&json!({"type": "object", "maxProperties": 1, "minProperties": 2}) => json!(false))]
     #[test_case(&json!({"type": ["null", "object"], "maxProperties": 1, "minProperties": 2}) => json!({"type": "null"}))]
+    #[test_case(&json!({"type": "object", "minProperties": 0}) => json!({"type": "object"}))]
+    #[test_case(&json!({"minProperties": 0}) => json!({}))]
     fn test_update_max_min_properties(schema: &Value) -> Value {
         test(update_max_min_properties, schema)
     }
@@ -309,7 +343,7 @@ mod tests {
     #[test_case(&json!({"type": "integer", "maximum": 1, "minimum": 2}) => json!(false))]
     #[test_case(&json!({"type": "number", "maximum": 1, "minimum": 2}) => json!(false))]
     #[test_case(&json!({"type": ["integer", "number"], "maximum": 1, "minimum": 2}) => json!(false))]
-    // // The incongruent primitive type is removed)
+    // The incongruent primitive type is removed)
     #[test_case(&json!({"type": ["integer", "null"], "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!({"type": "null"}))]
     #[test_case(&json!({"type": ["null", "number"], "exclusiveMaximum": 1, "exclusiveMinimum": 2}) => json!({"type": "null"}))]
     #[test_case(&json!({"type": ["array", "null"], "maxItems": 1, "minItems": 2}) => json!({"type": "null"}))]

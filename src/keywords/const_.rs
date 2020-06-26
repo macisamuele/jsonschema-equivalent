@@ -29,7 +29,7 @@ pub(crate) fn simple_const_cleanup(schema: &mut Value) -> bool {
         if schema_primitive_types.contains(const_primitive_type) {
             replace::type_with(
                 schema_object,
-                PrimitiveTypesBitMap::from_primitive_type(const_primitive_type),
+                PrimitiveTypesBitMap::from(const_primitive_type),
             )
         } else if const_primitive_type == PrimitiveType::Number
             && schema_primitive_types.contains(PrimitiveType::Integer)
@@ -37,7 +37,7 @@ pub(crate) fn simple_const_cleanup(schema: &mut Value) -> bool {
             // This additional case is needed because `PrimitiveType::from_serde_value` does not report `PrimitiveType::Integer`. Check the method doc for more info
             replace::type_with(
                 schema_object,
-                PrimitiveTypesBitMap::from_primitive_type(PrimitiveType::Integer),
+                PrimitiveTypesBitMap::from(PrimitiveType::Integer),
             )
         } else {
             replace::with_false_schema(schema)

@@ -55,16 +55,28 @@ lazy_static::lazy_static! {
     ;
 }
 
-impl PrimitiveTypesBitMap {
-    pub(crate) fn from_primitive_type(primitive_type: PrimitiveType) -> Self {
+impl From<PrimitiveType> for PrimitiveTypesBitMap {
+    fn from(primitive_type: PrimitiveType) -> Self {
         Self(primitive_type.to_bit_representation())
     }
+}
 
+impl<I: IntoIterator<Item = &'static PrimitiveType>> From<I> for PrimitiveTypesBitMap {
+    fn from(primitive_types: I) -> Self {
+        let mut result = Self(0);
+        for primitive_type in primitive_types {
+            result |= *primitive_type;
+        }
+        result
+    }
+}
+
+impl PrimitiveTypesBitMap {
     pub(crate) fn from_schema_value(schema_value: Option<&Value>) -> Self {
         match schema_value {
             Some(Value::String(value)) => {
                 if let Ok(primitive_type) = PrimitiveType::try_from(value.as_str()) {
-                    Self::from_primitive_type(primitive_type)
+                    Self::from(primitive_type)
                 } else {
                     // This should not be possible on a valid schema
                     Self(0)
@@ -105,6 +117,10 @@ impl PrimitiveTypesBitMap {
 
     pub(crate) fn remove(&mut self, primitive_type: PrimitiveType) {
         self.0 &= !(primitive_type.to_bit_representation());
+    }
+
+    pub(crate) fn remove_all(&mut self, primitive_types: Self) {
+        self.0 &= !(primitive_types.0);
     }
 
     pub(crate) fn to_schema_value(mut self) -> Option<Value> {

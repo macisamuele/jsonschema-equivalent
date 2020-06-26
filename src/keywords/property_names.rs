@@ -45,7 +45,7 @@ pub(crate) fn optimise_property_names(schema: &mut Value) -> bool {
         if let Value::Object(property_names_schema_object) = property_names_schema {
             updated_schema |= replace::type_with(
                 property_names_schema_object,
-                PrimitiveTypesBitMap::from_primitive_type(PrimitiveType::String),
+                PrimitiveTypesBitMap::from(PrimitiveType::String),
             );
         }
     }
@@ -87,7 +87,7 @@ pub(crate) fn optimise_property_names(schema: &mut Value) -> bool {
             } else {
                 replace::type_with(
                     property_names_schema_object,
-                    PrimitiveTypesBitMap::from_primitive_type(PrimitiveType::String),
+                    PrimitiveTypesBitMap::from(PrimitiveType::String),
                 )
             }
         } else {
