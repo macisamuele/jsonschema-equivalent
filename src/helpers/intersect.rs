@@ -1,7 +1,7 @@
 use crate::helpers::{
     common_values_and_deduplicate, join_and_deduplicate, replace, types::PrimitiveTypesBitMap,
 };
-use serde_json::{map::Entry, Value};
+use serde_json::{map::Entry, Map, Value};
 use std::ops::Deref;
 use std::ops::DerefMut;
 
@@ -46,6 +46,30 @@ impl IntersectStatus<'_> {
             }
         }
     }
+}
+
+static DEFFERRED_KEYWORDS: &[&str] = &[
+    "additionalItems",
+    "additionalProperties",
+    "items",
+    "patternProperties",
+    "properties",
+];
+
+/// Handle the intersection of schemas focusing only on `items` and `additionalItems` keywords
+fn handle_items_related_keywords(
+    _schema_object: &mut Map<String, Value>,
+    _other_schema: &Map<String, Value>,
+) -> bool {
+    false
+}
+
+/// Handle the intersection of schemas focusing only on `properties`, `additionalProperties` and `patternProperties` keywords
+fn handle_properties_related_keywords(
+    _schema_object: &mut Map<String, Value>,
+    _other_schema: &Map<String, Value>,
+) -> bool {
+    false
 }
 
 /// Intesection of `schema` with `other_schema`.
@@ -106,13 +130,16 @@ pub(crate) fn intersection_schema<'s>(
     let mut updated_schema = false;
 
     for (key, other_value) in other_schema_object {
+        if DEFFERRED_KEYWORDS.contains(&key.as_str()) {
+            continue;
+        }
         match schema_object.entry(key) {
             Entry::Vacant(entry) => {
                 let _ = entry.insert(other_value.clone());
                 updated_schema = true;
             }
             Entry::Occupied(mut entry) => {
-                let mut schema_value = entry.get_mut();
+                let schema_value = entry.get_mut();
                 if schema_value != other_value {
                     // Schema had the key, so we need to decide how to "merge" `schema_value` with `other_value`
                     // NOTE: We might decide to not merge in certain keys!
@@ -166,54 +193,6 @@ pub(crate) fn intersection_schema<'s>(
                                 updated_schema |= true;
                             }
                         }
-                        "items" => {
-                            match (&mut schema_value, &other_value) {
-                                (Value::Object(_), Value::Object(_)) => {
-                                    updated_schema |=
-                                        intersection_schema(schema_value, other_value)
-                                            .is_schema_updated();
-                                }
-                                (Value::Object(_), Value::Array(other_items)) => {
-                                    *schema_value = Value::Array(
-                                        other_items
-                                            .iter()
-                                            .map(|other_item| {
-                                                let mut other_item_clone = other_item.clone();
-                                                updated_schema |= intersection_schema(
-                                                    &mut other_item_clone,
-                                                    schema_value,
-                                                )
-                                                .is_schema_updated();
-                                                other_item_clone
-                                            })
-                                            .collect::<Vec<_>>(),
-                                    );
-                                }
-                                (Value::Array(schema_items), Value::Object(_)) => {
-                                    schema_items.iter_mut().for_each(|schema_item| {
-                                        updated_schema |=
-                                            intersection_schema(schema_item, other_value)
-                                                .is_schema_updated();
-                                    });
-                                }
-                                (Value::Array(schema_items), Value::Array(other_items)) => {
-                                    schema_items.iter_mut().zip(other_items).for_each(
-                                        |(schema_item, other_item)| {
-                                            updated_schema |=
-                                                intersection_schema(schema_item, other_item)
-                                                    .is_schema_updated();
-                                        },
-                                    );
-                                    if other_items.len() > schema_items.len() {
-                                        schema_items.extend(
-                                            other_items.iter().skip(schema_items.len()).cloned(),
-                                        );
-                                        updated_schema = true;
-                                    }
-                                }
-                                _ => {}
-                            };
-                        }
                         "type" => {
                             let schema_primitive_types =
                                 PrimitiveTypesBitMap::from_schema_value(schema_object.get("type"));
@@ -243,20 +222,17 @@ pub(crate) fn intersection_schema<'s>(
                             }
                         }
 
-                        // Keywords for which we have not tried to implement the intersection logic
                         "additionalItems"
                         | "additionalProperties"
-                        | "anyOf"
-                        | "dependencies"
-                        | "else"
-                        | "if"
-                        | "multipleOf"
-                        | "not"
-                        | "oneOf"
-                        | "pattern"
+                        | "items"
                         | "patternProperties"
-                        | "properties"
-                        | "then" => {
+                        | "properties " => {
+                            // Deferred to `handle_items_related_keywords` or `handle_properties_related_keywords`
+                        }
+
+                        // Keywords for which we have not tried to implement the intersection logic
+                        "anyOf" | "dependencies" | "else" | "if" | "multipleOf" | "not"
+                        | "oneOf" | "pattern" | "then" => {
                             is_complete_intersection = false;
                         }
 
@@ -273,6 +249,9 @@ pub(crate) fn intersection_schema<'s>(
             }
         };
     }
+
+    updated_schema |= handle_items_related_keywords(schema_object, other_schema_object);
+    updated_schema |= handle_properties_related_keywords(schema_object, other_schema_object);
 
     if is_complete_intersection {
         IntersectStatus::Complete {
@@ -544,48 +523,6 @@ mod tests {
         &json!(false),
         None,
         json!("1970-01-01")
-    )]
-    #[test_case(
-        &json!({"items": {}}),
-        &json!({}),
-        &json!({"items": {}}),
-        json!([1]),
-        None
-    )]
-    #[test_case(
-        &json!({"items": {}}),
-        &json!({"items": {"type": "string"}}),
-        &json!({"items": {"type": "string"}}),
-        json!(["str"]),
-        json!([1])
-    )]
-    #[test_case(
-        &json!({"items": {"minLength": 1}}),
-        &json!({"items": {"type": "string"}}),
-        &json!({"items": {"minLength": 1, "type": "string"}}),
-        json!(["str"]),
-        json!([1])
-    )]
-    #[test_case(
-        &json!({"items": {"minLength": 1}}),
-        &json!({"items": [{"type": "string"}, {"type": "integer"}]}),
-        &json!({"items": [{"minLength": 1, "type": "string"}, {"minLength": 1, "type": "integer"}]}),
-        json!(["str", 1]),
-        json!([1])
-    )]
-    #[test_case(
-        &json!({"items": [{"type": "string"}, {"type": "integer"}]}),
-        &json!({"items": {"minLength": 1}}),
-        &json!({"items": [{"minLength": 1, "type": "string"}, {"minLength": 1, "type": "integer"}]}),
-        json!(["str", 1]),
-        json!([1])
-    )]
-    #[test_case(
-        &json!({"items": [{"type": "string"}, {"type": "integer"}]}),
-        &json!({"items": [{"minLength": 1}, {"minimum": 2}, {"type": "boolean"}]}),
-        &json!({"items": [{"minLength": 1, "type": "string"}, {"minimum": 2, "type": "integer"}, {"type": "boolean"}]}),
-        json!(["str", 3, false]),
-        json!(["str", 3, "string"])
     )]
     #[test_case(
         &json!({"maximum": 1}),
