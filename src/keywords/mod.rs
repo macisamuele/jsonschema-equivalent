@@ -5,6 +5,7 @@ mod additional_properties;
 mod const_;
 mod enum_;
 mod if_;
+mod items;
 mod macro_;
 mod property_names;
 mod required;
@@ -32,6 +33,7 @@ static UPDATE_SCHEMA_METHODS: &[fn(&mut Value) -> bool] = &[
     const_::simple_const_cleanup,
     enum_::simple_enum_cleanup,
     if_::simplify_if,
+    items::simplify_items,
     macro_::maximum_minimum_related_keywords::update_max_min_related_keywords,
     property_names::optimise_property_names,
     required::remove_empty_required,
