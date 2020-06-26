@@ -61,4 +61,7 @@
 | `{"const": "some-text", "type": "array"}` | `false` | Incongruent types between `const` value and defined type make the schema a `false` schema |
 | `{"enum": ["some-text", 1], "type": "string"}` | `{"enum": ["some-text"], "type": "string"}` | Enum values that cannot be valid according to the schema are elided |
 | `{"enum": [1], "type": "string"}` | `false` | No `enum` value can be valid against the schema, so it results into a `false` schema |
+| `{"additionalItems": false, "items": {"type": "string"}}` | `{"items": {"type": "string"}}` | `additionalItems` is meaningless if `items` is not having an array of schemas |
+| `{"additionalItems": {"type": "boolean"}, "items": [{"type": "string"}, {"type": "string"}], "maxItems": 1}` | `{"items": [{"type": "string"}, {"type": "string"}], "maxItems": 1}` | `additionalItems` is meaningless if `maxLength` is at most the length of `items` schemas |
+| `{"additionalItems": false, "items": [{"type": "string"}, {"type": "string"}]}` | `{"items": [{"type": "string"}, {"type": "string"}], "maxItems": 2}` | `additionalItems` can be replaced with `maxItems`, which is easier to validate, if `additionalItems` is a false schema |
 <!-- TABLE END -->

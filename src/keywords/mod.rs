@@ -1,5 +1,6 @@
 //! The reference of the JSON Schema specifications are available on
 //! <https://tools.ietf.org/html/draft-handrews-json-schema-validation-01>
+mod additional_items;
 mod additional_properties;
 mod const_;
 mod enum_;
@@ -26,7 +27,8 @@ static UPDATE_SCHEMA_METHODS: &[fn(&mut Value) -> bool] = &[
     type_::remove_extraneous_keys_keyword_type,
     macro_::ignore_keywords::remove_keywords_in_must_ignore_groups,
     // All others, currently no special ordering is defined
-    additional_properties::remove_empty_additional_properties,
+    additional_items::simplify_additional_items,
+    additional_properties::simplify_additional_properties,
     const_::simple_const_cleanup,
     enum_::simple_enum_cleanup,
     if_::simplify_if,
