@@ -18,54 +18,38 @@
 <!-- TABLE START -->
 | JSON Schema | Optimised JSON Schema | Desciption |
 |-|:-:|:-:|
-| `1` | `1` | A non schema passses untouched |
-| `true` | `true` | A boolean schema passes untouched (1) |
-| `false` | `false` | A boolean schema passes untouched (2) |
-| `{"minimum": 1, "type": "array"}` | `{"type": "array"}` | `minimum` keyword has no effect on schema with `type` array |
-| `{"minimum": 1, "type": "boolean"}` | `{"type": "boolean"}` | `minimum` keyword has no effect on schema with `type` boolean |
-| `{"minimum": 1, "type": "null"}` | `{"type": "null"}` | `minimum` keyword has no effect on schema with `type` null |
-| `{"minLength": 1, "type": "integer"}` | `{"type": "integer"}` | `minLength` keyword has no effect on schema with `type` integer |
-| `{"minLength": 1, "type": "number"}` | `{"type": "number"}` | `minLength` keyword has no effect on schema with `type` number |
-| `{"minimum": 1, "type": "object"}` | `{"type": "object"}` | `minimum` keyword has no effect on schema with `type` object |
-| `{"minimum": 1, "type": "string"}` | `{"type": "string"}` | `minimum` keyword has no effect on schema with `type` string |
-| `{"type": ["number", "integer"]}` | `{"type": "number"}` | `type` keyword containing `number` and `integer` is as effective as only containing number |
-| `{"minItems": 3, "minLength": 1, "minimum": 2, "type": ["number", "string"]}` | `{"minLength": 1, "minimum": 2, "type": ["number", "string"]}` | `minItems` keyword has no effect on schema with `type` string or number |
-| `{"additionalProperties": true}` | `true` | `additionalProperties` keyword has no effect on `true` schema |
+| `{"additionalItems": {"type": "boolean"}, "items": [{"type": "string"}, {"type": "string"}], "maxItems": 1}` | `{"items": [{"type": "string"}], "maxItems": 1}` | `additionalItems` is meaningless if `maxLength` is at most the length of `items` schemas |
+| `{"additionalItems": false, "items": [{"type": "string"}, {"type": "string"}]}` | `{"items": [{"type": "string"}, {"type": "string"}], "maxItems": 2}` | `additionalItems` can be replaced with `maxItems`, which is easier to validate, if `additionalItems` is a false schema |
+| `{"additionalItems": false, "items": {"type": "string"}}` | `{"items": {"type": "string"}}` | `additionalItems` is meaningless if `items` is not having an array of schemas |
 | `{"additionalProperties": {}}` | `true` | `additionalProperties` keyword has no effect on empty schema |
-| `{"required": []}` | `true` | `required` keyword has no effect on empty list |
-| `{"exclusiveMaximum": 1, "exclusiveMinimum": 2, "type": "number"}` | `false` | `exclusiveMaximum` keyword lower than `exclusiveMinimum` keyword results into a `false` schema |
-| `{"maxItems": 1, "minItems": 2, "type": "array"}` | `false` | `maxItems` keyword lower than `minItems` keyword results into a `false` schema |
-| `{"maxLength": 1, "minLength": 2, "type": "string"}` | `false` | `maxLength` keyword lower than `minLength` keyword results into a `false` schema |
-| `{"maxProperties": 1, "minProperties": 2, "type": "object"}` | `false` | `maxProperties` keyword lower than `minProperties` keyword results into a `false` schema |
-| `{"minItems": 0, "type": "array"}` | `{"type": "array"}` | `minItems` set to 0 has the same effect of not having the keyword defined |
-| `{"minLength": 0, "type": "string"}` | `{"type": "string"}` | `minLength` set to 0 has the same effect of not having the keyword defined |
-| `{"minProperties": 0, "type": "object"}` | `{"type": "object"}` | `minProperties` set to 0 has the same effect of not having the keyword defined |
-| `{"maxItems": 2, "minItems": 1, "type": "integer"}` | `{"type": "integer"}` | Extraneous `*max*`, `*min*` keywords are removed (if not matching with type) |
-| `{"maxItems": 1, "minItems": 2, "type": ["integer", "array"]}` | `{"type": "integer"}` | If `*max*`, `*min*` keywords are creating an impossible range then the corresponding `type` is removed |
-| `{"minimum": 1, "type": "array"}` | `{"type": "array"}` | `minimum` keyword has no effect on schema with `type` array |
-| `{"minimum": 1, "type": "boolean"}` | `{"type": "boolean"}` | `minimum` keyword has no effect on schema with `type` boolean |
-| `{"minimum": 1, "type": "null"}` | `{"type": "null"}` | `minimum` keyword has no effect on schema with `type` null |
-| `{"minLength": 1, "type": "integer"}` | `{"type": "integer"}` | `minLength` keyword has no effect on schema with `type` integer |
-| `{"minLength": 1, "type": "number"}` | `{"type": "number"}` | `minLength` keyword has no effect on schema with `type` number |
-| `{"minimum": 1, "type": "object"}` | `{"type": "object"}` | `minimum` keyword has no effect on schema with `type` object |
-| `{"minimum": 1, "type": "string"}` | `{"type": "string"}` | `minimum` keyword has no effect on schema with `type` string |
-| `{"type": ["number", "integer"]}` | `{"type": "number"}` | `type` keyword containing `number` and `integer` is as effective as only containing number |
-| `{"minItems": 3, "minLength": 1, "minimum": 2, "type": ["number", "string"]}` | `{"minLength": 1, "minimum": 2, "type": ["number", "string"]}` | `minItems` keyword has no effect on schema with `type` string or number |
 | `{"additionalProperties": true}` | `true` | `additionalProperties` keyword has no effect on `true` schema |
-| `{"additionalProperties": {}}` | `true` | `additionalProperties` keyword has no effect on empty schema |
-| `{"required": []}` | `true` | `required` keyword has no effect on empty list |
-| `{"exclusiveMaximum": 1, "exclusiveMinimum": 2, "type": "number"}` | `false` | `exclusiveMaximum` keyword lower than `exclusiveMinimum` keyword results into a `false` schema |
-| `{"maxItems": 1, "minItems": 2, "type": "array"}` | `false` | `maxItems` keyword lower than `minItems` keyword results into a `false` schema |
-| `{"maxLength": 1, "minLength": 2, "type": "string"}` | `false` | `maxLength` keyword lower than `minLength` keyword results into a `false` schema |
-| `{"maxProperties": 1, "minProperties": 2, "type": "object"}` | `false` | `maxProperties` keyword lower than `minProperties` keyword results into a `false` schema |
-| `{"propertyNames": {"minLength": 1}, "type": "number"}` | `{"type": "number"}` | `propertyNames` adds no restriction if JSON objects are not allowed |
-| `{"propertyNames": {"minLength": 1, "minimum": 1}, "type": "object"}` | `{"propertyNames": {"minLength": 1, "type": "string"}, "type": "object"}` | `propertyNames` must be of `type` string, so all keywords extraneous for the `type` to that have no influence |
-| `{"minProperties": 1, "propertyNames": false, "type": ["number", "object"]}` | `{"type": "number"}` | `propertyNames` as `false` schema, with the requirement of a property defined in case of `type` object prevents a JSON object to ever be valid |
 | `{"const": "some-text", "type": "array"}` | `false` | Incongruent types between `const` value and defined type make the schema a `false` schema |
 | `{"enum": ["some-text", 1], "type": "string"}` | `{"enum": ["some-text"], "type": "string"}` | Enum values that cannot be valid according to the schema are elided |
 | `{"enum": [1], "type": "string"}` | `false` | No `enum` value can be valid against the schema, so it results into a `false` schema |
-| `{"additionalItems": false, "items": {"type": "string"}}` | `{"items": {"type": "string"}}` | `additionalItems` is meaningless if `items` is not having an array of schemas |
+| `{"exclusiveMaximum": 1, "exclusiveMinimum": 2, "type": "number"}` | `false` | `exclusiveMaximum` keyword lower than `exclusiveMinimum` keyword results into a `false` schema |
 | `{"items": [{"type": "string"}, {"type": "string"}], "maxItems": 1}` | `{"items": [{"type": "string"}], "maxItems": 1}` | `items` defined as array with length longer than `maxItems` is equivalent to not have the `items` schemas, after `maxItems` not defined |
-| `{"additionalItems": {"type": "boolean"}, "items": [{"type": "string"}, {"type": "string"}], "maxItems": 1}` | `{"items": [{"type": "string"}], "maxItems": 1}` | `additionalItems` is meaningless if `maxLength` is at most the length of `items` schemas |
-| `{"additionalItems": false, "items": [{"type": "string"}, {"type": "string"}]}` | `{"items": [{"type": "string"}, {"type": "string"}], "maxItems": 2}` | `additionalItems` can be replaced with `maxItems`, which is easier to validate, if `additionalItems` is a false schema |
+| `{"maxItems": 1, "minItems": 2, "type": "array"}` | `false` | `maxItems` keyword lower than `minItems` keyword results into a `false` schema |
+| `{"maxItems": 1, "minItems": 2, "type": ["integer", "array"]}` | `{"type": "integer"}` | If `*max*`, `*min*` keywords are creating an impossible range then the corresponding `type` is removed |
+| `{"maxItems": 2, "minItems": 1, "type": "integer"}` | `{"type": "integer"}` | Extraneous `*max*`, `*min*` keywords are removed (if not matching with type) |
+| `{"maxLength": 1, "minLength": 2, "type": "string"}` | `false` | `maxLength` keyword lower than `minLength` keyword results into a `false` schema |
+| `{"maxProperties": 1, "minProperties": 2, "type": "object"}` | `false` | `maxProperties` keyword lower than `minProperties` keyword results into a `false` schema |
+| `{"minimum": 1, "type": "array"}` | `{"type": "array"}` | `minimum` keyword has no effect on schema with `type` array |
+| `{"minimum": 1, "type": "boolean"}` | `{"type": "boolean"}` | `minimum` keyword has no effect on schema with `type` boolean |
+| `{"minimum": 1, "type": "null"}` | `{"type": "null"}` | `minimum` keyword has no effect on schema with `type` null |
+| `{"minimum": 1, "type": "object"}` | `{"type": "object"}` | `minimum` keyword has no effect on schema with `type` object |
+| `{"minimum": 1, "type": "string"}` | `{"type": "string"}` | `minimum` keyword has no effect on schema with `type` string |
+| `{"minItems": 0, "type": "array"}` | `{"type": "array"}` | `minItems` set to 0 has the same effect of not having the keyword defined |
+| `{"minItems": 3, "minLength": 1, "minimum": 2, "type": ["number", "string"]}` | `{"minLength": 1, "minimum": 2, "type": ["number", "string"]}` | `minItems` keyword has no effect on schema with `type` string or number |
+| `{"minLength": 0, "type": "string"}` | `{"type": "string"}` | `minLength` set to 0 has the same effect of not having the keyword defined |
+| `{"minLength": 1, "type": "integer"}` | `{"type": "integer"}` | `minLength` keyword has no effect on schema with `type` integer |
+| `{"minLength": 1, "type": "number"}` | `{"type": "number"}` | `minLength` keyword has no effect on schema with `type` number |
+| `{"minProperties": 0, "type": "object"}` | `{"type": "object"}` | `minProperties` set to 0 has the same effect of not having the keyword defined |
+| `{"minProperties": 1, "propertyNames": false, "type": ["number", "object"]}` | `{"type": "number"}` | `propertyNames` as `false` schema, with the requirement of a property defined in case of `type` object prevents a JSON object to ever be valid |
+| `{"propertyNames": {"minLength": 1, "minimum": 1}, "type": "object"}` | `{"propertyNames": {"minLength": 1, "type": "string"}, "type": "object"}` | `propertyNames` must be of `type` string, so all keywords extraneous for the `type` to that have no influence |
+| `{"propertyNames": {"minLength": 1}, "type": "number"}` | `{"type": "number"}` | `propertyNames` adds no restriction if JSON objects are not allowed |
+| `{"required": []}` | `true` | `required` keyword has no effect on empty list |
+| `{"type": ["number", "integer"]}` | `{"type": "number"}` | `type` keyword containing `number` and `integer` is as effective as only containing number |
+| `1` | `1` | A non schema passses untouched |
+| `false` | `false` | A boolean schema passes untouched (2) |
+| `true` | `true` | A boolean schema passes untouched (1) |
 <!-- TABLE END -->
