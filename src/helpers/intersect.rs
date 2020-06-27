@@ -293,385 +293,11 @@ mod tests {
     use serde_json::{json, Value};
     use test_case::test_case;
 
-    // Empty, true or false schema handling
-    #[test_case(
-        json!({}),
-        json!({}),
-        json!({}),
-        json!(null),
-        None
-    )]
-    #[test_case(
-        json!("not-a-schema"),
-        json!({}),
-        json!("not-a-schema"),
-        None,
-        None
-    )]
-    #[test_case(
-        json!({}),
-        json!("not-a-schema"),
-        json!({}),
-        None,
-        None
-    )]
-    #[test_case(
-        json!({"type": "string"}),
-        json!(true),
-        json!({"type": "string"}),
-        json!("string"),
-        json!(false)
-    )]
-    #[test_case(
-        json!(true),
-        json!({"type": "string"}),
-        json!({"type": "string"}),
-        json!("string"),
-        json!(false)
-    )]
-    #[test_case(
-        json!({"type": "string"}),
-        json!(false),
-        json!(false),
-        None,
-        json!("whatever")
-    )]
-    #[test_case(
-        json!(false),
-        json!({"type": "string"}),
-        json!(false),
-        None,
-        json!("whatever")
-    )]
-    #[test_case(
-        json!({}),
-        json!({"minimum": 1}),
-        json!({"minimum": 1}),
-        json!(2),
-        json!(0)
-    )]
-    // Merge of not duplicated keywords
-    #[test_case(
-        json!({"maximum": 2}),
-        json!({"minimum": 1}),
-        json!({"maximum": 2, "minimum": 1}),
-        json!(1.5),
-        json!(0)
-    )]
-    // Single keyworkds tests. NOTE: Some cases might be "impossible" as other optimisations would remove them (as joining {"type":"string"} with {"type":"number"})
-    #[test_case(
-        json!({"allOf": [true]}),
-        json!({"allOf": [true]}),
-        json!({"allOf": [true]}),
-        json!(null),
-        None
-    )]
-    #[test_case(
-        json!({"allOf": [{"type": "string"}]}),
-        json!({"allOf": [{"type": "number"}]}),
-        json!({"allOf": [{"type": "string"}, {"type": "number"}]}),
-        None,
-        json!(1)
-    )]
-    #[test_case(
-        json!({"allOf": [{"type": "string"}]}),
-        json!({"allOf": [{"type": "number"}, {"type": "string"}]}),
-        json!({"allOf": [{"type": "string"}, {"type": "number"}]}),
-        None,
-        json!("string")
-    )]
-    #[test_case(
-        json!({"const": true}),
-        json!({"const": true}),
-        json!({"const": true}),
-        json!(true),
-        None
-    )]
-    #[test_case(
-        json!({"const": false}),
-        json!({"const": true}),
-        json!(false),
-        None,
-        json!(null)
-    )]
-    #[test_case(
-        json!({"contentEncoding": "base64"}),
-        json!({"contentEncoding": "base64"}),
-        json!({"contentEncoding": "base64"}),
-        json!("c29tZXRoaW5nCg=="),  // `echo "something" | base64 -` == "c29tZXRoaW5nCg==""
-        json!("something")
-    )]
-    #[test_case(
-        json!({"contentEncoding": "base64"}),
-        json!({"contentEncoding": "7bit"}),
-        json!(false),
-        None,
-        json!("something")
-    )]
-    #[test_case(
-        json!({"contentMediaType": "application/json"}),
-        json!({"contentMediaType": "application/json"}),
-        json!({"contentMediaType": "application/json"}),
-        json!(r#"{"key": "value"}"#),
-        json!("something")
-    )]
-    #[test_case(
-        json!({"contentMediaType": "application/json"}),
-        json!({"contentMediaType": "application/png"}),
-        json!(false),
-        None,
-        json!("something")
-    )]
-    #[test_case(
-        json!({"contains": {"type": "string"}}),
-        json!({}),
-        json!({"contains": {"type": "string"}}),
-        json!(["string"]),
-        json!([1])
-    )]
-    #[test_case(
-        json!({"contains": {"type": "string"}}),
-        json!({"contains": {"minLength": 1}}),
-        json!({"contains": {"type": "string", "minLength": 1}}),
-        json!(["string"]),
-        json!([1])
-    )]
-    #[test_case(
-        json!({"enum": [1, 2, 3]}),
-        json!({"enum": [1, 3, 5]}),
-        json!({"enum": [1, 3]}),
-        json!(1),
-        json!(2)
-    )]
-    #[test_case(
-        json!({"enum": [1, 2, 3]}),
-        json!({"enum": [4, 5, 6]}),
-        json!(false),
-        None,
-        json!(1)
-    )]
-    #[test_case(
-        json!({"exclusiveMaximum": 1}),
-        json!({"exclusiveMaximum": 2}),
-        json!({"exclusiveMaximum": 1}),
-        json!(0.5),
-        json!(1.5)
-    )]
-    #[test_case(
-        json!({"exclusiveMinimum": 1}),
-        json!({"exclusiveMinimum": 2}),
-        json!({"exclusiveMinimum": 2}),
-        json!(2.5),
-        json!(1.5)
-    )]
-    #[test_case(
-        json!({"format": "date"}),
-        json!({"format": "date"}),
-        json!({"format": "date"}),
-        json!("1970-01-01"),
-        json!("19700101")
-    )]
-    #[test_case(
-        json!({"format": "date"}),
-        json!({"format": "date-time"}),
-        json!(false),
-        None,
-        json!("1970-01-01")
-    )]
-    #[test_case(
-        json!({"items": {}}),
-        json!({}),
-        json!({"items": {}}),
-        json!([1]),
-        None
-    )]
-    #[test_case(
-        json!({"items": {}}),
-        json!({"items": {"type": "string"}}),
-        json!({"items": {"type": "string"}}),
-        json!(["str"]),
-        json!([1])
-    )]
-    #[test_case(
-        json!({"items": {"minLength": 1}}),
-        json!({"items": {"type": "string"}}),
-        json!({"items": {"minLength": 1, "type": "string"}}),
-        json!(["str"]),
-        json!([1])
-    )]
-    #[test_case(
-        json!({"items": {"minLength": 1}}),
-        json!({"items": [{"type": "string"}, {"type": "integer"}]}),
-        json!({"items": [{"minLength": 1, "type": "string"}, {"minLength": 1, "type": "integer"}]}),
-        json!(["str", 1]),
-        json!([1])
-    )]
-    #[test_case(
-        json!({"items": [{"type": "string"}, {"type": "integer"}]}),
-        json!({"items": {"minLength": 1}}),
-        json!({"items": [{"minLength": 1, "type": "string"}, {"minLength": 1, "type": "integer"}]}),
-        json!(["str", 1]),
-        json!([1])
-    )]
-    #[test_case(
-        json!({"items": [{"type": "string"}, {"type": "integer"}]}),
-        json!({"items": [{"minLength": 1}, {"minimum": 2}, {"type": "boolean"}]}),
-        json!({"items": [{"minLength": 1, "type": "string"}, {"minimum": 2, "type": "integer"}, {"type": "boolean"}]}),
-        json!(["str", 3, false]),
-        json!(["str", 3, "string"])
-    )]
-    #[test_case(
-        json!({"maximum": 1}),
-        json!({"maximum": 2}),
-        json!({"maximum": 1}),
-        json!(0.5),
-        json!(1.5)
-    )]
-    #[test_case(
-        json!({"maxItems": 1}),
-        json!({"maxItems": 2}),
-        json!({"maxItems": 1}),
-        json!([1]),
-        json!([1, 2])
-    )]
-    #[test_case(
-        json!({"maxLength": 1}),
-        json!({"maxLength": 2}),
-        json!({"maxLength": 1}),
-        json!("s"),
-        json!("st")
-    )]
-    #[test_case(
-        json!({"maxProperties": 1}),
-        json!({"maxProperties": 2}),
-        json!({"maxProperties": 1}),
-        json!({"p1": null}),
-        json!({"p1" :null, "p2":null})
-    )]
-    #[test_case(
-        json!({"minimum": 1}),
-        json!({"minimum": 2}),
-        json!({"minimum": 2}),
-        json!(2.5),
-        json!(1.5)
-    )]
-    #[test_case(
-        json!({"minItems": 1}),
-        json!({"minItems": 2}),
-        json!({"minItems": 2}),
-        json!([1,2]),
-        json!([1])
-    )]
-    #[test_case(
-        json!({"minLength": 1}),
-        json!({"minLength": 2}),
-        json!({"minLength": 2}),
-        json!("st"),
-        json!("s")
-    )]
-    #[test_case(
-        json!({"minProperties": 1}),
-        json!({"minProperties": 2}),
-        json!({"minProperties": 2}),
-        json!({"p1": null, "p2": null}),
-        json!({"p1": null})
-    )]
-    #[test_case(
-        json!({"propertyNames": true}),
-        json!({"propertyNames": {"type": "number"}}),
-        json!({"propertyNames": {"type": "number"}}),
-        None,
-        None
-    )]
-    #[test_case(
-        json!({"propertyNames": {"type": "number"}}),
-        json!({"propertyNames": true}),
-        json!({"propertyNames": {"type": "number"}}),
-        None,
-        None
-    )]
-    #[test_case(
-        json!({"propertyNames": false}),
-        json!({"propertyNames": {"type": "number"}}),
-        json!({"propertyNames": false}),
-        None,
-        None
-    )]
-    #[test_case(
-        json!({"propertyNames": {"type": "number"}}),
-        json!({"propertyNames": false}),
-        json!({"propertyNames": false}),
-        None,
-        None
-    )]
-    #[test_case(
-        json!({"propertyNames": {"type": "string"}}),
-        json!({"propertyNames": {"type": "number"}}),
-        json!({"propertyNames": false}),
-        None,
-        None
-    )]
-    #[test_case(
-        json!({"required": []}),
-        json!({"required": ["p1"]}),
-        json!({"required": ["p1"]}),
-        json!({"p1": 1}),
-        json!({})
-    )]
-    #[test_case(
-        json!({"required": ["p1"]}),
-        json!({"required": ["p2"]}),
-        json!({"required": ["p1", "p2"]}),
-        json!({"p1": 1, "p2": 2}),
-        json!({"p1": 1})
-    )]
-    #[test_case(
-        json!({"required": ["p1"]}),
-        json!({"required": ["p1"]}),
-        json!({"required": ["p1"]}),
-        json!({"p1": 1}),
-        json!({})
-    )]
-    #[test_case(
-        json!({"type": "integer"}),
-        json!({"type": "number"}),
-        json!({"type": "integer"}),
-        json!(1),
-        json!(1.5)
-    )]
-    #[test_case(
-        json!({"type": ["integer", "object", "string"]}),
-        json!({"type": ["integer", "string"]}),
-        json!({"type": ["integer", "string"]}),
-        json!("string"),
-        json!({})
-    )]
-    #[test_case(
-        json!({"type": ["integer", "object", "string"]}),
-        json!({"type": "number"}),
-        json!({"type": "integer"}),
-        json!(1),
-        json!(2.3)
-    )]
-    #[test_case(
-        json!({"type": "object"}),
-        json!({"type": "string"}),
-        json!(false),
-        None,
-        json!(null)
-    )]
-    #[test_case(
-        json!({"uniqueItems": false}),
-        json!({"uniqueItems": true}),
-        json!({"uniqueItems": true}),
-        json!([1,2]),
-        json!([1,1])
-    )]
-    #[allow(clippy::needless_pass_by_value)]
-    fn test_intersection_schema<I1, I2>(
-        mut schema: Value,
-        other: Value,
-        expected_schema: Value,
+    fn test<I1, I2>(
+        schema: &Value,
+        other: &Value,
+        optimise_schema_fn: &dyn Fn(&mut Value, &Value) -> bool,
+        expected_schema: &Value,
         valid: I1,
         invalid: I2,
     ) where
@@ -698,39 +324,437 @@ mod tests {
             );
         }
 
-        let original_schema = schema.clone();
-        let intersect_status = intersection_schema(&mut schema, &other);
-        assert_eq!(&*intersect_status, &expected_schema);
+        let mut optimised_schema = schema.clone();
+        let is_schema_updated = optimise_schema_fn(&mut optimised_schema, other);
+        assert_eq!(&optimised_schema, expected_schema);
 
-        if intersect_status.is_schema_updated() {
+        if is_schema_updated {
             assert_ne!(
-                &*intersect_status, &original_schema,
+                &optimised_schema, schema,
                 "The schema seems not updated, but it was. Original schema = {}, Final schema = {}",
-                original_schema, &*intersect_status
+                schema, optimised_schema
             );
         } else {
             assert_eq!(
-                &*intersect_status, &original_schema,
+                &optimised_schema, schema,
                 "The schema seems updated, but it was not supposed to be. Original schema = {}, Final schema = {}",
-                original_schema, &*intersect_status
+                schema, optimised_schema
             );
         }
 
         if let Some(valid_instance) = &valid {
             assert!(
-                jsonschema::is_valid(&schema, valid_instance),
+                jsonschema::is_valid(&optimised_schema, valid_instance),
                 "{} is not valid against {} [after intersection]",
                 valid_instance,
-                schema
+                optimised_schema
             );
         }
         if let Some(invalid_instance) = &invalid {
             assert!(
-                !jsonschema::is_valid(&schema, invalid_instance),
+                !jsonschema::is_valid(&optimised_schema, invalid_instance),
                 "{} is valid against {} [after intersection]",
                 invalid_instance,
-                schema
+                optimised_schema
             );
         }
+    }
+
+    // Empty, true or false schema handling
+    #[test_case(
+        &json!({}),
+        &json!({}),
+        &json!({}),
+        json!(null),
+        None
+    )]
+    #[test_case(
+        &json!("not-a-schema"),
+        &json!({}),
+        &json!("not-a-schema"),
+        None,
+        None
+    )]
+    #[test_case(
+        &json!({}),
+        &json!("not-a-schema"),
+        &json!({}),
+        None,
+        None
+    )]
+    #[test_case(
+        &json!({"type": "string"}),
+        &json!(true),
+        &json!({"type": "string"}),
+        json!("string"),
+        json!(false)
+    )]
+    #[test_case(
+        &json!(true),
+        &json!({"type": "string"}),
+        &json!({"type": "string"}),
+        json!("string"),
+        json!(false)
+    )]
+    #[test_case(
+        &json!({"type": "string"}),
+        &json!(false),
+        &json!(false),
+        None,
+        json!("whatever")
+    )]
+    #[test_case(
+        &json!(false),
+        &json!({"type": "string"}),
+        &json!(false),
+        None,
+        json!("whatever")
+    )]
+    #[test_case(
+        &json!({}),
+        &json!({"minimum": 1}),
+        &json!({"minimum": 1}),
+        json!(2),
+        json!(0)
+    )]
+    // Merge of not duplicated keywords
+    #[test_case(
+        &json!({"maximum": 2}),
+        &json!({"minimum": 1}),
+        &json!({"maximum": 2, "minimum": 1}),
+        json!(1.5),
+        json!(0)
+    )]
+    // Single keyworkds tests. NOTE: Some cases might be "impossible" as other optimisations would remove them (as joining {"type":"string"} with {"type":"number"})
+    #[test_case(
+        &json!({"allOf": [true]}),
+        &json!({"allOf": [true]}),
+        &json!({"allOf": [true]}),
+        json!(null),
+        None
+    )]
+    #[test_case(
+        &json!({"allOf": [{"type": "string"}]}),
+        &json!({"allOf": [{"type": "number"}]}),
+        &json!({"allOf": [{"type": "string"}, {"type": "number"}]}),
+        None,
+        json!(1)
+    )]
+    #[test_case(
+        &json!({"allOf": [{"type": "string"}]}),
+        &json!({"allOf": [{"type": "number"}, {"type": "string"}]}),
+        &json!({"allOf": [{"type": "string"}, {"type": "number"}]}),
+        None,
+        json!("string")
+    )]
+    #[test_case(
+        &json!({"const": true}),
+        &json!({"const": true}),
+        &json!({"const": true}),
+        json!(true),
+        None
+    )]
+    #[test_case(
+        &json!({"const": false}),
+        &json!({"const": true}),
+        &json!(false),
+        None,
+        json!(null)
+    )]
+    #[test_case(
+        &json!({"contentEncoding": "base64"}),
+        &json!({"contentEncoding": "base64"}),
+        &json!({"contentEncoding": "base64"}),
+        json!("c29tZXRoaW5nCg=="),  // `echo "something" | base64 -` == "c29tZXRoaW5nCg==""
+        json!("something")
+    )]
+    #[test_case(
+        &json!({"contentEncoding": "base64"}),
+        &json!({"contentEncoding": "7bit"}),
+        &json!(false),
+        None,
+        json!("something")
+    )]
+    #[test_case(
+        &json!({"contentMediaType": "application/json"}),
+        &json!({"contentMediaType": "application/json"}),
+        &json!({"contentMediaType": "application/json"}),
+        json!(r#"{"key": "value"}"#),
+        json!("something")
+    )]
+    #[test_case(
+        &json!({"contentMediaType": "application/json"}),
+        &json!({"contentMediaType": "application/png"}),
+        &json!(false),
+        None,
+        json!("something")
+    )]
+    #[test_case(
+        &json!({"contains": {"type": "string"}}),
+        &json!({}),
+        &json!({"contains": {"type": "string"}}),
+        json!(["string"]),
+        json!([1])
+    )]
+    #[test_case(
+        &json!({"contains": {"type": "string"}}),
+        &json!({"contains": {"minLength": 1}}),
+        &json!({"contains": {"type": "string", "minLength": 1}}),
+        json!(["string"]),
+        json!([1])
+    )]
+    #[test_case(
+        &json!({"enum": [1, 2, 3]}),
+        &json!({"enum": [1, 3, 5]}),
+        &json!({"enum": [1, 3]}),
+        json!(1),
+        json!(2)
+    )]
+    #[test_case(
+        &json!({"enum": [1, 2, 3]}),
+        &json!({"enum": [4, 5, 6]}),
+        &json!(false),
+        None,
+        json!(1)
+    )]
+    #[test_case(
+        &json!({"exclusiveMaximum": 1}),
+        &json!({"exclusiveMaximum": 2}),
+        &json!({"exclusiveMaximum": 1}),
+        json!(0.5),
+        json!(1.5)
+    )]
+    #[test_case(
+        &json!({"exclusiveMinimum": 1}),
+        &json!({"exclusiveMinimum": 2}),
+        &json!({"exclusiveMinimum": 2}),
+        json!(2.5),
+        json!(1.5)
+    )]
+    #[test_case(
+        &json!({"format": "date"}),
+        &json!({"format": "date"}),
+        &json!({"format": "date"}),
+        json!("1970-01-01"),
+        json!("19700101")
+    )]
+    #[test_case(
+        &json!({"format": "date"}),
+        &json!({"format": "date-time"}),
+        &json!(false),
+        None,
+        json!("1970-01-01")
+    )]
+    #[test_case(
+        &json!({"items": {}}),
+        &json!({}),
+        &json!({"items": {}}),
+        json!([1]),
+        None
+    )]
+    #[test_case(
+        &json!({"items": {}}),
+        &json!({"items": {"type": "string"}}),
+        &json!({"items": {"type": "string"}}),
+        json!(["str"]),
+        json!([1])
+    )]
+    #[test_case(
+        &json!({"items": {"minLength": 1}}),
+        &json!({"items": {"type": "string"}}),
+        &json!({"items": {"minLength": 1, "type": "string"}}),
+        json!(["str"]),
+        json!([1])
+    )]
+    #[test_case(
+        &json!({"items": {"minLength": 1}}),
+        &json!({"items": [{"type": "string"}, {"type": "integer"}]}),
+        &json!({"items": [{"minLength": 1, "type": "string"}, {"minLength": 1, "type": "integer"}]}),
+        json!(["str", 1]),
+        json!([1])
+    )]
+    #[test_case(
+        &json!({"items": [{"type": "string"}, {"type": "integer"}]}),
+        &json!({"items": {"minLength": 1}}),
+        &json!({"items": [{"minLength": 1, "type": "string"}, {"minLength": 1, "type": "integer"}]}),
+        json!(["str", 1]),
+        json!([1])
+    )]
+    #[test_case(
+        &json!({"items": [{"type": "string"}, {"type": "integer"}]}),
+        &json!({"items": [{"minLength": 1}, {"minimum": 2}, {"type": "boolean"}]}),
+        &json!({"items": [{"minLength": 1, "type": "string"}, {"minimum": 2, "type": "integer"}, {"type": "boolean"}]}),
+        json!(["str", 3, false]),
+        json!(["str", 3, "string"])
+    )]
+    #[test_case(
+        &json!({"maximum": 1}),
+        &json!({"maximum": 2}),
+        &json!({"maximum": 1}),
+        json!(0.5),
+        json!(1.5)
+    )]
+    #[test_case(
+        &json!({"maxItems": 1}),
+        &json!({"maxItems": 2}),
+        &json!({"maxItems": 1}),
+        json!([1]),
+        json!([1, 2])
+    )]
+    #[test_case(
+        &json!({"maxLength": 1}),
+        &json!({"maxLength": 2}),
+        &json!({"maxLength": 1}),
+        json!("s"),
+        json!("st")
+    )]
+    #[test_case(
+        &json!({"maxProperties": 1}),
+        &json!({"maxProperties": 2}),
+        &json!({"maxProperties": 1}),
+        json!({"p1": null}),
+        json!({"p1" :null, "p2":null})
+    )]
+    #[test_case(
+        &json!({"minimum": 1}),
+        &json!({"minimum": 2}),
+        &json!({"minimum": 2}),
+        json!(2.5),
+        json!(1.5)
+    )]
+    #[test_case(
+        &json!({"minItems": 1}),
+        &json!({"minItems": 2}),
+        &json!({"minItems": 2}),
+        json!([1,2]),
+        json!([1])
+    )]
+    #[test_case(
+        &json!({"minLength": 1}),
+        &json!({"minLength": 2}),
+        &json!({"minLength": 2}),
+        json!("st"),
+        json!("s")
+    )]
+    #[test_case(
+        &json!({"minProperties": 1}),
+        &json!({"minProperties": 2}),
+        &json!({"minProperties": 2}),
+        json!({"p1": null, "p2": null}),
+        json!({"p1": null})
+    )]
+    #[test_case(
+        &json!({"propertyNames": true}),
+        &json!({"propertyNames": {"type": "number"}}),
+        &json!({"propertyNames": {"type": "number"}}),
+        None,
+        None
+    )]
+    #[test_case(
+        &json!({"propertyNames": {"type": "number"}}),
+        &json!({"propertyNames": true}),
+        &json!({"propertyNames": {"type": "number"}}),
+        None,
+        None
+    )]
+    #[test_case(
+        &json!({"propertyNames": false}),
+        &json!({"propertyNames": {"type": "number"}}),
+        &json!({"propertyNames": false}),
+        None,
+        None
+    )]
+    #[test_case(
+        &json!({"propertyNames": {"type": "number"}}),
+        &json!({"propertyNames": false}),
+        &json!({"propertyNames": false}),
+        None,
+        None
+    )]
+    #[test_case(
+        &json!({"propertyNames": {"type": "string"}}),
+        &json!({"propertyNames": {"type": "number"}}),
+        &json!({"propertyNames": false}),
+        None,
+        None
+    )]
+    #[test_case(
+        &json!({"required": []}),
+        &json!({"required": ["p1"]}),
+        &json!({"required": ["p1"]}),
+        json!({"p1": 1}),
+        json!({})
+    )]
+    #[test_case(
+        &json!({"required": ["p1"]}),
+        &json!({"required": ["p2"]}),
+        &json!({"required": ["p1", "p2"]}),
+        json!({"p1": 1, "p2": 2}),
+        json!({"p1": 1})
+    )]
+    #[test_case(
+        &json!({"required": ["p1"]}),
+        &json!({"required": ["p1"]}),
+        &json!({"required": ["p1"]}),
+        json!({"p1": 1}),
+        json!({})
+    )]
+    #[test_case(
+        &json!({"type": "integer"}),
+        &json!({"type": "number"}),
+        &json!({"type": "integer"}),
+        json!(1),
+        json!(1.5)
+    )]
+    #[test_case(
+        &json!({"type": ["integer", "object", "string"]}),
+        &json!({"type": ["integer", "string"]}),
+        &json!({"type": ["integer", "string"]}),
+        json!("string"),
+        json!({})
+    )]
+    #[test_case(
+        &json!({"type": ["integer", "object", "string"]}),
+        &json!({"type": "number"}),
+        &json!({"type": "integer"}),
+        json!(1),
+        json!(2.3)
+    )]
+    #[test_case(
+        &json!({"type": "object"}),
+        &json!({"type": "string"}),
+        &json!(false),
+        None,
+        json!(null)
+    )]
+    #[test_case(
+        &json!({"uniqueItems": false}),
+        &json!({"uniqueItems": true}),
+        &json!({"uniqueItems": true}),
+        json!([1,2]),
+        json!([1,1])
+    )]
+    fn test_intersection_schema<I1, I2>(
+        schema: &Value,
+        other: &Value,
+        expected_schema: &Value,
+        valid: I1,
+        invalid: I2,
+    ) where
+        I1: Into<Option<Value>>,
+        I2: Into<Option<Value>>,
+    {
+        test(
+            schema,
+            other,
+            &|mut schema, other| {
+                let intersect_status = intersection_schema(&mut schema, other);
+                assert_eq!(&*intersect_status, expected_schema);
+                intersect_status.is_schema_updated()
+            },
+            expected_schema,
+            valid,
+            invalid,
+        )
     }
 }
