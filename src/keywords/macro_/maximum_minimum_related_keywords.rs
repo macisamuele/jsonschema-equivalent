@@ -72,14 +72,6 @@ fn update_max_min_items(
                 PrimitiveTypesBitMap::from(PrimitiveType::Array),
                 &["maxItems", "minItems"],
             ),
-            (_, Some(min_)) if min_ <= 0. => {
-                if let Value::Object(schema_object) = schema {
-                    let _ = schema_object.remove("minItems");
-                    true
-                } else {
-                    false
-                }
-            }
             _ => false,
         }
     } else {
@@ -106,14 +98,6 @@ fn update_max_min_length(
                 PrimitiveTypesBitMap::from(PrimitiveType::String),
                 &["maxLength", "minLength"],
             ),
-            (_, Some(min_)) if min_ <= 0. => {
-                if let Value::Object(schema_object) = schema {
-                    let _ = schema_object.remove("minLength");
-                    true
-                } else {
-                    false
-                }
-            }
             _ => false,
         }
     } else {
@@ -140,14 +124,6 @@ fn update_max_min_properties(
                 PrimitiveType::Object.into(),
                 &["maxProperties", "minProperties"],
             ),
-            (_, Some(min_)) if min_ <= 0. => {
-                if let Value::Object(schema_object) = schema {
-                    let _ = schema_object.remove("minProperties");
-                    true
-                } else {
-                    false
-                }
-            }
             _ => false,
         }
     } else {
@@ -259,8 +235,6 @@ mod tests {
     #[test_case(&json!({"type": "null", "maxItems": 2, "minItems": 1}) => json!({"type": "null", "maxItems": 2, "minItems": 1}))]
     #[test_case(&json!({"type": "null", "maxItems": 1, "minItems": 2}) => json!({"type": "null", "maxItems": 1, "minItems": 2}))]
     #[test_case(&json!({"type": ["array", "null"], "maxItems": 1, "minItems": 2}) => json!({"type": "null"}))]
-    #[test_case(&json!({"type": "array", "minItems": 0}) => json!({"type": "array"}))]
-    #[test_case(&json!({"minItems": 0}) => json!({}))]
     fn test_update_max_min_items(schema: &Value) -> Value {
         test(update_max_min_items, schema)
     }
@@ -270,8 +244,6 @@ mod tests {
     #[test_case(&json!({"type": "string", "maxLength": 2, "minLength": 1}) => json!({"type": "string", "maxLength": 2, "minLength": 1}))]
     #[test_case(&json!({"type": "string", "maxLength": 1, "minLength": 2}) => json!(false))]
     #[test_case(&json!({"type": ["null", "string"], "maxLength": 1, "minLength": 2}) => json!({"type": "null"}))]
-    #[test_case(&json!({"type": "string", "minLength": 0}) => json!({"type": "string"}))]
-    #[test_case(&json!({"minLength": 0}) => json!({}))]
     fn test_update_max_min_length(schema: &Value) -> Value {
         test(update_max_min_length, schema)
     }
@@ -281,8 +253,6 @@ mod tests {
     #[test_case(&json!({"type": "object", "maxProperties": 2, "minProperties": 1}) => json!({"type": "object", "maxProperties": 2, "minProperties": 1}))]
     #[test_case(&json!({"type": "object", "maxProperties": 1, "minProperties": 2}) => json!(false))]
     #[test_case(&json!({"type": ["null", "object"], "maxProperties": 1, "minProperties": 2}) => json!({"type": "null"}))]
-    #[test_case(&json!({"type": "object", "minProperties": 0}) => json!({"type": "object"}))]
-    #[test_case(&json!({"minProperties": 0}) => json!({}))]
     fn test_update_max_min_properties(schema: &Value) -> Value {
         test(update_max_min_properties, schema)
     }

@@ -28,6 +28,7 @@ static UPDATE_SCHEMA_METHODS: &[fn(&mut Value) -> bool] = &[
     // is added first as it quickly reduces the amount of keywords to process
     type_::remove_extraneous_keys_keyword_type,
     macro_::ignore_keywords::remove_keywords_in_must_ignore_groups,
+    macro_::ignore_keywords::omit_keywords_that_do_not_alter_schema_selectivity,
     // All others, currently no special ordering is defined
     additional_items::simplify_additional_items,
     additional_properties::simplify_additional_properties,
